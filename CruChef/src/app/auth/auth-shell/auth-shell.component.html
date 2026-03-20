@@ -1,0 +1,37 @@
+<main class="auth-layout">
+  <section class="auth-aside">
+    <p class="eyebrow">{{ eyebrow }}</p>
+    <h1>{{ title }}</h1>
+    <p class="lead">{{ subtitle }}</p>
+
+    <div class="feature-list">
+      <div class="feature-card">
+        <span class="material-symbols-outlined">bolt</span>
+        <p>Administra platos, restaurantes y ordenes desde una sola interfaz.</p>
+      </div>
+      <div class="feature-card">
+        <span class="material-symbols-outlined">shield_lock</span>
+        <p>Acceso seguro con una experiencia clara tanto en desktop como en movil.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="brand">
+      <div class="brand-mark">
+        <span class="material-symbols-outlined">restaurant</span>
+      </div>
+      <div>
+        <p class="brand-name">CruChef</p>
+        <p class="brand-copy">Panel gastronomico</p>
+      </div>
+    </div>
+
+    <ng-content />
+
+    <p class="alternate-copy">
+      {{ alternateText }}
+      <a [routerLink]="alternateRoute">{{ alternateLabel }}</a>
+    </p>
+  </section>
+</main>

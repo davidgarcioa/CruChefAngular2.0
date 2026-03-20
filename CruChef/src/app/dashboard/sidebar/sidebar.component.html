@@ -1,0 +1,42 @@
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">
+      <span class="material-symbols-outlined">restaurant</span>
+    </div>
+    <div>
+      <p class="brand-name">Cruchef</p>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav" aria-label="Principal">
+    @for (item of items; track item.route) {
+      <a
+        class="nav-link"
+        [routerLink]="item.route"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span class="nav-indicator" aria-hidden="true"></span>
+        <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="sidebar-footer">
+    <button type="button" class="footer-action" aria-label="Configuracion">
+      <span class="material-symbols-outlined">settings</span>
+    </button>
+    <button type="button" class="footer-action" aria-label="Notificaciones">
+      <span class="material-symbols-outlined">notifications</span>
+    </button>
+    <button
+      type="button"
+      class="footer-action"
+      aria-label="Cerrar sesion"
+      (click)="logout()"
+    >
+      <span class="material-symbols-outlined">logout</span>
+    </button>
+  </div>
+</aside>

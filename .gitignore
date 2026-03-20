@@ -1,0 +1,7 @@
+Backend/node_modules/
+CruChef/node_modules/
+CruChef/.angular/
+CruChef/dist/
+Backend/firebase-key.json
+CruChef/.git_backup/
+*.log

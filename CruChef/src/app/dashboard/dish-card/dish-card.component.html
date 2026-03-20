@@ -1,0 +1,16 @@
+<article class="dish-card" [style.--delay]="animationDelay">
+  <img class="dish-image" [src]="dish.imageUrl" [alt]="dish.name" />
+
+  <div class="dish-body">
+    <h3>{{ dish.name }}</h3>
+    <p class="dish-price">{{ dish.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+
+    <div class="dish-rating" aria-label="Calificacion">
+      @for (star of stars; track star) {
+        <span>*</span>
+      }
+    </div>
+
+    <p class="dish-restaurant">{{ dish.restaurant }}</p>
+  </div>
+</article>

@@ -1,0 +1,14 @@
+<div class="categories" aria-label="Categorias">
+  @for (category of categories; track category.id; let index = $index) {
+    <button
+      type="button"
+      class="category-chip"
+      [class.is-active]="category.id === selectedCategoryId"
+      [style.--delay]="index"
+      (click)="categoryChange.emit(category.id)"
+    >
+      <span class="category-icon" aria-hidden="true">{{ category.icon }}</span>
+      <span class="category-name">{{ category.name }}</span>
+    </button>
+  }
+</div>

@@ -1,0 +1,67 @@
+<app-auth-shell
+  eyebrow="Crea tu cuenta"
+  title="Registro"
+  subtitle="Completa tus datos para crear acceso al panel administrativo de CruChef."
+  alternateText="Ya tienes cuenta?"
+  alternateLabel="Inicia sesion"
+  alternateRoute="/login"
+>
+  <section class="auth-card">
+    <div class="card-copy">
+      <h2>Registro</h2>
+      <p>Solicitamos los datos basicos para crear el acceso.</p>
+    </div>
+
+    <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+      @if (errorMessage()) {
+        <p class="status-message status-message--error">{{ errorMessage() }}</p>
+      }
+
+      <label class="field">
+        <span>Nombre completo</span>
+        <input type="text" formControlName="fullName" placeholder="Tu nombre" />
+        @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+          <small>Ingresa un nombre valido.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Correo electronico</span>
+        <input type="email" formControlName="email" placeholder="correo@cruchef.com" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <small>Ingresa un correo valido.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Numero de documento</span>
+        <input type="text" formControlName="documentNumber" placeholder="Documento" />
+        @if (form.controls.documentNumber.touched && form.controls.documentNumber.invalid) {
+          <small>Ingresa un numero de documento valido.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Contrasena</span>
+        <input type="password" formControlName="password" placeholder="Minimo 6 caracteres" />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <small>La contrasena debe tener al menos 6 caracteres.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Confirmar contrasena</span>
+        <input type="password" formControlName="confirmPassword" placeholder="Repite tu contrasena" />
+        @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) {
+          <small>Confirma tu contrasena.</small>
+        } @else if (form.touched && form.hasError('passwordMismatch')) {
+          <small>Las contrasenas no coinciden.</small>
+        }
+      </label>
+
+      <button type="submit" class="submit-button" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Creando cuenta...' : 'Crear cuenta' }}
+      </button>
+    </form>
+  </section>
+</app-auth-shell>

@@ -1,0 +1,69 @@
+:host {
+  display: block;
+}
+
+.dish-card {
+  position: relative;
+  min-width: 10.5rem;
+  padding: 3.9rem 1rem 1rem;
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    #1e1e1e;
+  text-align: center;
+  animation: fadeSlideUp 520ms ease both;
+  animation-delay: calc(var(--delay) * 90ms);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.22);
+}
+
+.dish-image {
+  position: absolute;
+  top: -3.1rem;
+  left: 50%;
+  width: 8rem;
+  height: 8rem;
+  transform: translateX(-50%);
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.35));
+}
+
+.dish-body h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.05;
+}
+
+.dish-price {
+  margin: 0.45rem 0 0;
+  color: #ffd166;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.dish-rating {
+  display: flex;
+  justify-content: center;
+  gap: 0.16rem;
+  margin-top: 0.7rem;
+  color: #ffbe0b;
+}
+
+.dish-restaurant {
+  margin: 0.55rem 0 0;
+  color: #bdbdbd;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

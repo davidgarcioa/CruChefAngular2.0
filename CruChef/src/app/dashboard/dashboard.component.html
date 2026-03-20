@@ -1,0 +1,162 @@
+<main class="main-layout">
+  <app-sidebar [items]="navigationItems" />
+
+  <section class="content-shell">
+    <header class="content-header">
+      <div class="header-copy">
+        <p class="eyebrow">Panel de gestion gastronomica</p>
+        <h1>{{ viewTitle }}</h1>
+      </div>
+
+      <app-search-bar />
+    </header>
+
+    @if (currentView === 'restaurants') {
+      <section class="section-block fade-slide">
+        <div class="section-heading">
+          <div>
+            <h2>Categorias</h2>
+            <p><span>10+</span> nuevas categorias agregadas esta semana</p>
+          </div>
+        </div>
+
+        <app-category-slider
+          [categories]="categories"
+          [selectedCategoryId]="selectedCategoryId()"
+          (categoryChange)="selectedCategoryId.set($event)"
+        />
+      </section>
+
+      <section class="crud-layout section-block fade-slide delay-1">
+        <section class="crud-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>{{ editingDishId() ? 'Editar plato' : 'Crear plato' }}</h2>
+              <p><span>Firebase</span> guarda el plato y la imagen solo se elige del catalogo.</p>
+            </div>
+          </div>
+
+          <form class="dish-form" [formGroup]="form" (ngSubmit)="submitDish()">
+            @if (formSuccess()) {
+              <p class="status-message status-message--success">{{ formSuccess() }}</p>
+            }
+
+            @if (formError()) {
+              <p class="status-message status-message--error">{{ formError() }}</p>
+            }
+
+            <label class="field">
+              <span>Nombre del plato</span>
+              <input type="text" formControlName="name" placeholder="Ej. Hamburguesa doble" />
+            </label>
+
+            <label class="field">
+              <span>Restaurante</span>
+              <input type="text" formControlName="restaurant" placeholder="Ej. CruChef House" />
+            </label>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>Precio</span>
+                <input type="number" formControlName="price" min="1000" step="500" />
+              </label>
+
+              <label class="field">
+                <span>Calificacion</span>
+                <input type="number" formControlName="rating" min="1" max="5" />
+              </label>
+            </div>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>Categoria</span>
+                <select formControlName="categoryId">
+                  @for (category of categoryOptions; track category.id) {
+                    <option [value]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Icono de comida</span>
+                <select formControlName="imageKey">
+                  @for (option of imageOptions; track option.key) {
+                    <option [value]="option.key">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <div class="image-preview">
+              <img [src]="previewImageUrl()" [alt]="form.controls.name.value || 'Preview'" />
+              <p>Vista previa del icono elegido. No se permiten subidas manuales.</p>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button" [disabled]="isSaving()">
+                {{
+                  isSaving()
+                    ? 'Guardando...'
+                    : editingDishId()
+                      ? 'Actualizar plato'
+                      : 'Crear plato'
+                }}
+              </button>
+
+              @if (editingDishId()) {
+                <button type="button" class="secondary-button" (click)="resetForm()">
+                  Cancelar edicion
+                </button>
+              }
+            </div>
+          </form>
+        </section>
+
+        <section class="catalog-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Platos populares</h2>
+              <p><span>{{ filteredDishes().length }}</span> platos visibles en la categoria actual</p>
+            </div>
+          </div>
+
+          <div class="dish-row">
+            @for (dish of filteredDishes(); track dish.id; let index = $index) {
+              <div class="dish-item">
+                <app-dish-card [dish]="dish" [animationDelay]="index" />
+              <div class="dish-actions">
+                  <button
+                    type="button"
+                    class="mini-button"
+                    [disabled]="!isPersistedDish(dish)"
+                    (click)="editDish(dish)"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    class="mini-button mini-button--danger"
+                    [disabled]="!isPersistedDish(dish)"
+                    (click)="deleteDish(dish.id)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      </section>
+    } @else {
+      <section class="placeholder-card fade-slide">
+        <p class="eyebrow">Modulo en construccion</p>
+        <h2>{{ viewTitle }}</h2>
+        <p>
+          La shell principal ya esta montada. Esta seccion puede reutilizar el mismo
+          sidebar, buscador y sistema de cards para ampliar el panel sin rehacer layout.
+        </p>
+        <a routerLink="/restaurants" class="placeholder-link">Ir a Restaurantes</a>
+      </section>
+    }
+  </section>
+</main>
