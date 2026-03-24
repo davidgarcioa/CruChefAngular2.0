@@ -3,6 +3,7 @@ import { Component, Input, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../auth/auth.service';
+import { RoleService } from '../../auth/role.service';
 import { NavigationItem } from '../dashboard.data';
 
 @Component({
@@ -14,12 +15,14 @@ import { NavigationItem } from '../dashboard.data';
 })
 export class SidebarComponent {
   private readonly authService = inject(AuthService);
+  private readonly roleService = inject(RoleService);
   private readonly router = inject(Router);
 
   @Input({ required: true }) items: NavigationItem[] = [];
 
   async logout(): Promise<void> {
     await this.authService.logout();
+    this.roleService.clearRole();
     await this.router.navigateByUrl('/login');
   }
 }

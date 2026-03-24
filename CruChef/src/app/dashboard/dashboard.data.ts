@@ -37,11 +37,17 @@ const dishIllustration = (emoji: string, base: string, accent: string): string =
     </svg>
   `);
 
-export const navigationItems: NavigationItem[] = [
+export const ownerNavigationItems: NavigationItem[] = [
   { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
   { label: 'Ordenes', route: '/orders', icon: 'receipt_long' },
   { label: 'Restaurantes', route: '/restaurants', icon: 'storefront' },
   { label: 'Historial', route: '/history', icon: 'history' },
+  { label: 'Cambiar rol', route: '/select-role', icon: 'switch_account' },
+];
+
+export const userNavigationItems: NavigationItem[] = [
+  { label: 'Menu', route: '/user', icon: 'restaurant_menu' },
+  { label: 'Cambiar rol', route: '/select-role', icon: 'switch_account' },
 ];
 
 export const categories: Category[] = [

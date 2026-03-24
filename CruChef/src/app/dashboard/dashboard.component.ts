@@ -8,7 +8,7 @@ import { CategorySliderComponent } from './category-slider/category-slider.compo
 import {
   categories,
   dishImageOptions,
-  navigationItems,
+  ownerNavigationItems,
 } from './dashboard.data';
 import { DishCardComponent } from './dish-card/dish-card.component';
 import { DishFormValue, DishService } from './dish.service';
@@ -37,7 +37,7 @@ export class DashboardComponent {
   private readonly dishService = inject(DishService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly navigationItems = navigationItems;
+  readonly navigationItems = ownerNavigationItems;
   readonly categories = categories;
   readonly categoryOptions = categories.filter((category) => category.id !== 'all');
   readonly imageOptions = dishImageOptions;

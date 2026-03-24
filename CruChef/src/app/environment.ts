@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
+  apiBaseUrl: 'http://localhost:3000/api',
   firebaseConfig: {
     apiKey: 'AIzaSyDyURnZJ6DEFHW04R8lJvDIY9drPK8is6c',
     authDomain: 'cruchefangular.firebaseapp.com',

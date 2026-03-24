@@ -1,21 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
-import { FirebaseError } from 'firebase/app';
-import {
-  Firestore,
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getFirestore,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-} from 'firebase/firestore';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
 
-import { FirebaseService } from '../firebase.service';
+import { environment } from '../environment';
 import { Dish } from '../models/dish.model';
 import {
   defaultDishes,
@@ -36,86 +24,89 @@ export interface DishFormValue {
   providedIn: 'root',
 })
 export class DishService {
-  private readonly firebaseService = inject(FirebaseService);
+  private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
-  private firestoreInstance: Firestore | null = null;
-
-  private get firestore(): Firestore {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
-      throw new Error('Firestore no esta disponible en este entorno.');
-    }
-
-    if (!this.firestoreInstance) {
-      this.firestoreInstance = getFirestore(this.firebaseService.app);
-    }
-
-    return this.firestoreInstance;
-  }
+  private readonly refreshDishes$ = new BehaviorSubject<void>(undefined);
 
   getImageOptions() {
     return dishImageOptions;
   }
 
   getDishes(): Observable<Dish[]> {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
+    if (!isPlatformBrowser(this.platformId)) {
       return of(defaultDishes);
     }
 
-    return new Observable<Dish[]>((subscriber) => {
-      const dishesRef = collection(this.firestore, 'dishes');
-      const dishesQuery = query(dishesRef, orderBy('name'));
-
-      const unsubscribe = onSnapshot(
-        dishesQuery,
-        (snapshot) => {
-          const dishes = snapshot.docs.map((document) =>
-            this.mapDish({
-              id: document.id,
-              ...document.data(),
-            }),
-          );
-
-          subscriber.next(dishes.length > 0 ? dishes : defaultDishes);
-        },
-        (error) => subscriber.error(error),
-      );
-
-      return unsubscribe;
-    });
+    return this.refreshDishes$.pipe(
+      switchMap(() =>
+        this.http.get<Record<string, unknown>[]>(this.apiUrl).pipe(
+          map((documents) => documents.map((document) => this.mapDish(document))),
+          map((dishes) => (dishes.length > 0 ? dishes : defaultDishes)),
+          catchError((error) => {
+            console.error('No se pudieron cargar los platos desde el backend.', error);
+            return of(defaultDishes);
+          }),
+        ),
+      ),
+    );
   }
 
   async createDish(payload: DishFormValue): Promise<void> {
-    await addDoc(collection(this.firestore, 'dishes'), this.toFirestoreDish(payload));
+    this.ensureBrowser();
+    await firstValueFrom(this.http.post(this.apiUrl, this.toApiDish(payload)));
+    this.refreshDishes$.next();
   }
 
   async updateDish(id: string, payload: DishFormValue): Promise<void> {
-    await updateDoc(doc(this.firestore, 'dishes', id), this.toFirestoreDish(payload));
+    this.ensureBrowser();
+    await firstValueFrom(this.http.put(`${this.apiUrl}/${id}`, this.toApiDish(payload)));
+    this.refreshDishes$.next();
   }
 
   async deleteDish(id: string): Promise<void> {
-    await deleteDoc(doc(this.firestore, 'dishes', id));
+    this.ensureBrowser();
+    await firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`));
+    this.refreshDishes$.next();
   }
 
   getErrorMessage(error: unknown): string {
-    const code =
-      error instanceof FirebaseError
-        ? error.code
-        : error instanceof Error
-          ? error.message
-          : '';
+    if (error instanceof HttpErrorResponse) {
+      const message =
+        typeof error.error?.message === 'string' ? error.error.message : '';
 
-    switch (code) {
-      case 'permission-denied':
-        return 'Firestore rechazo la operacion. Revisa las reglas de la coleccion dishes.';
-      case 'unavailable':
-      case 'auth/network-request-failed':
-        return 'No se pudo conectar con Firebase.';
-      default:
-        return 'No se pudo guardar el plato.';
+      if (error.status === 0) {
+        return 'No se pudo conectar con el backend de platos. Verifica que Backend este corriendo en http://localhost:3000.';
+      }
+
+      if (error.status === 404) {
+        return message || 'El plato ya no existe en Firebase.';
+      }
+
+      if (error.status >= 500) {
+        return message || 'El backend no pudo guardar el plato en Firebase.';
+      }
+
+      return message || 'No se pudo guardar el plato.';
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'No se pudo guardar el plato.';
+  }
+
+  private get apiUrl(): string {
+    return `${environment.apiBaseUrl}/dishes`;
+  }
+
+  private ensureBrowser(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      throw new Error('Los platos solo se pueden administrar desde el navegador.');
     }
   }
 
-  private toFirestoreDish(payload: DishFormValue) {
+  private toApiDish(payload: DishFormValue) {
     return {
       name: payload.name.trim(),
       price: Number(payload.price),

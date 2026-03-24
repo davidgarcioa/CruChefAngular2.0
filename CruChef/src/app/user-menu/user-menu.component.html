@@ -1,0 +1,84 @@
+<main class="main-layout">
+  <app-sidebar [items]="navigationItems" />
+
+  <section class="content-shell">
+    <header class="content-header fade-slide">
+      <div class="header-copy">
+        <p class="eyebrow">Vista de usuario</p>
+        <h1>Platos disponibles</h1>
+        <p class="lead">
+          Estas viendo el menu de <span>{{ currentRestaurantLabel() }}</span>.
+        </p>
+      </div>
+    </header>
+
+    <section class="focus-panel section-block fade-slide delay-1">
+      <div class="focus-copy">
+        <p class="eyebrow">Restaurante actual</p>
+        <h2>{{ currentRestaurantLabel() }}</h2>
+        <p>
+          Cambia de restaurante para revisar que platos tiene disponibles antes de hacer tu
+          pedido.
+        </p>
+      </div>
+
+      <div class="restaurant-switcher">
+        @for (restaurant of restaurants(); track restaurant) {
+          <button
+            type="button"
+            class="restaurant-pill"
+            [class.is-active]="selectedRestaurant() === restaurant"
+            (click)="selectRestaurant(restaurant)"
+          >
+            {{ restaurant }}
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="section-block fade-slide delay-2">
+      <div class="section-heading">
+        <div>
+          <h2>Categorias</h2>
+          <p>
+            <span>{{ filteredDishes().length }}</span> platos visibles en
+            {{ currentRestaurantLabel() }}.
+          </p>
+        </div>
+      </div>
+
+      <app-category-slider
+        [categories]="categories"
+        [selectedCategoryId]="selectedCategoryId()"
+        (categoryChange)="selectedCategoryId.set($event)"
+      />
+    </section>
+
+    <section class="catalog-panel section-block fade-slide delay-3">
+      <div class="section-heading section-heading--stacked">
+        <div>
+          <h2>Menu del restaurante</h2>
+          <p>
+            <span>{{ filteredDishes().length }}</span> platos disponibles en esta vista.
+          </p>
+        </div>
+      </div>
+
+      @if (filteredDishes().length > 0) {
+        <div class="dish-row">
+          @for (dish of filteredDishes(); track dish.id; let index = $index) {
+            <div class="dish-item">
+              <app-dish-card [dish]="dish" [animationDelay]="index" />
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <p class="eyebrow">Sin platos</p>
+          <h3>No hay platos disponibles para esta combinacion.</h3>
+          <p>Cambia la categoria o el restaurante para revisar otras opciones del catalogo.</p>
+        </div>
+      }
+    </section>
+  </section>
+</main>

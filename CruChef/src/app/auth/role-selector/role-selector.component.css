@@ -1,0 +1,95 @@
+:host {
+  display: block;
+}
+
+.role-card {
+  width: min(100%, 42rem);
+  padding: 1.8rem;
+  border-radius: 1.75rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.card-copy h2,
+.card-copy p {
+  margin: 0;
+}
+
+.card-copy h2 {
+  color: #ffffff;
+  font-size: 1.9rem;
+}
+
+.card-copy p {
+  margin-top: 0.55rem;
+  color: #a9a9a9;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.role-option {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.role-option:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(230, 81, 81, 0.45);
+  background: rgba(230, 81, 81, 0.08);
+}
+
+.role-option--owner:hover:not(:disabled) {
+  border-color: rgba(255, 209, 102, 0.45);
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.role-option .material-symbols-outlined {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background: rgba(230, 81, 81, 0.14);
+}
+
+.role-option--owner .material-symbols-outlined {
+  background: rgba(255, 209, 102, 0.12);
+  color: #ffd166;
+}
+
+.role-option strong {
+  font-size: 1.2rem;
+}
+
+.role-option p {
+  margin: 0;
+  color: #bdbdbd;
+  line-height: 1.55;
+}
+
+.role-option:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+@media (max-width: 720px) {
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../auth.service';
 import { AuthShellComponent } from '../auth-shell/auth-shell.component';
+import { RoleService } from '../role.service';
 
 @Component({
   selector: 'app-login',
@@ -18,6 +19,7 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly roleService = inject(RoleService);
 
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal('');
@@ -56,7 +58,8 @@ export class LoginComponent {
         );
       }
 
-      await this.router.navigateByUrl('/restaurants');
+      this.roleService.clearRole();
+      await this.router.navigateByUrl('/select-role');
     } catch (error) {
       this.errorMessage.set(this.authService.getErrorMessage(error));
     } finally {
