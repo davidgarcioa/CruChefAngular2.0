@@ -1,4 +1,4 @@
-:host {
+﻿:host {
   display: block;
   min-height: 100vh;
 }
@@ -94,8 +94,7 @@
 }
 
 .brand-name,
-.brand-copy,
-.alternate-copy {
+.brand-copy {
   margin: 0;
 }
 
@@ -105,20 +104,8 @@
   font-weight: 800;
 }
 
-.brand-copy,
-.alternate-copy {
+.brand-copy {
   color: #9d9d9d;
-}
-
-.alternate-copy {
-  margin-top: 1.2rem;
-  text-align: center;
-}
-
-.alternate-copy a {
-  color: #ffffff;
-  font-weight: 700;
-  text-decoration: none;
 }
 
 @media (max-width: 920px) {

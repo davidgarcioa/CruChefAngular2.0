@@ -1,4 +1,4 @@
-import { Category } from '../models/category.model';
+﻿import { Category } from '../models/category.model';
 import { Dish } from '../models/dish.model';
 
 export interface NavigationItem {
@@ -51,50 +51,50 @@ export const userNavigationItems: NavigationItem[] = [
 ];
 
 export const categories: Category[] = [
-  { id: 'all', name: 'Todas', icon: '🍽️' },
-  { id: 'burgers', name: 'Burger', icon: '🍔' },
-  { id: 'pizza', name: 'Pizza', icon: '🍕' },
-  { id: 'tacos', name: 'Tacos', icon: '🌮' },
-  { id: 'combo', name: 'Combos', icon: '🍱' },
-  { id: 'desserts', name: 'Postres', icon: '🍰' },
+  { id: 'all', name: 'Todas', icon: '\uD83C\uDF7D\uFE0F' },
+  { id: 'burgers', name: 'Burger', icon: '\uD83C\uDF54' },
+  { id: 'pizza', name: 'Pizza', icon: '\uD83C\uDF55' },
+  { id: 'tacos', name: 'Tacos', icon: '\uD83C\uDF2E' },
+  { id: 'combo', name: 'Combos', icon: '\uD83C\uDF71' },
+  { id: 'desserts', name: 'Postres', icon: '\uD83C\uDF70' },
 ];
 
 export const dishImageOptions: DishImageOption[] = [
   {
     key: 'burger',
     label: 'Hamburguesa',
-    emoji: '🍔',
-    imageUrl: dishIllustration('🍔', '#f0be68', '#7d5233'),
+    emoji: '\uD83C\uDF54',
+    imageUrl: dishIllustration('\uD83C\uDF54', '#f0be68', '#7d5233'),
   },
   {
     key: 'pizza',
     label: 'Pizza',
-    emoji: '🍕',
-    imageUrl: dishIllustration('🍕', '#ef9d52', '#d24b36'),
+    emoji: '\uD83C\uDF55',
+    imageUrl: dishIllustration('\uD83C\uDF55', '#ef9d52', '#d24b36'),
   },
   {
     key: 'sushi',
     label: 'Sushi',
-    emoji: '🍣',
-    imageUrl: dishIllustration('🍣', '#ff9a6e', '#2b293c'),
+    emoji: '\uD83C\uDF63',
+    imageUrl: dishIllustration('\uD83C\uDF63', '#ff9a6e', '#2b293c'),
   },
   {
     key: 'dessert',
     label: 'Postre',
-    emoji: '🍰',
-    imageUrl: dishIllustration('🍰', '#ff8a8d', '#924337'),
+    emoji: '\uD83C\uDF70',
+    imageUrl: dishIllustration('\uD83C\uDF70', '#ff8a8d', '#924337'),
   },
   {
     key: 'tacos',
     label: 'Tacos',
-    emoji: '🌮',
-    imageUrl: dishIllustration('🌮', '#f1b94b', '#b86a25'),
+    emoji: '\uD83C\uDF2E',
+    imageUrl: dishIllustration('\uD83C\uDF2E', '#f1b94b', '#b86a25'),
   },
   {
     key: 'combo',
     label: 'Combo',
-    emoji: '🍱',
-    imageUrl: dishIllustration('🍱', '#84b0ff', '#35507a'),
+    emoji: '\uD83C\uDF71',
+    imageUrl: dishIllustration('\uD83C\uDF71', '#84b0ff', '#35507a'),
   },
 ];
 

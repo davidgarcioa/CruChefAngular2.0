@@ -1,15 +1,15 @@
-<app-auth-shell
+﻿<app-auth-shell
   eyebrow="Bienvenido"
-  title="Inicia sesion"
-  subtitle="Accede a CruChef para elegir si vas a entrar como usuario para explorar platos o como propietario para administrar el catalogo."
-  alternateText="Todavia no tienes cuenta?"
-  alternateLabel="Registrate"
+  title="Inicia sesi&oacute;n"
+  subtitle="Accede a CruChef para elegir si vas a entrar como usuario para explorar platos o como propietario para administrar el cat&aacute;logo."
+  alternateText="Todav&iacute;a no tienes cuenta?"
+  alternateLabel="Reg&iacute;strate"
   alternateRoute="/register"
 >
   <section class="auth-card">
     <div class="card-copy">
       <h2>Acceso</h2>
-      <p>Ingresa tu correo y tu contrasena.</p>
+      <p>Ingresa tu correo y tu contrase&ntilde;a.</p>
     </div>
 
     <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
@@ -26,18 +26,18 @@
       }
 
       <label class="field">
-        <span>Correo electronico</span>
+        <span>Correo electr&oacute;nico</span>
         <input type="email" formControlName="email" placeholder="correo@cruchef.com" />
         @if (form.controls.email.touched && form.controls.email.invalid) {
-          <small>Ingresa un correo valido.</small>
+          <small>Ingresa un correo v&aacute;lido.</small>
         }
       </label>
 
       <label class="field">
-        <span>Contrasena</span>
-        <input type="password" formControlName="password" placeholder="Minimo 6 caracteres" />
+        <span>Contrase&ntilde;a</span>
+        <input type="password" formControlName="password" placeholder="M&iacute;nimo 6 caracteres" />
         @if (form.controls.password.touched && form.controls.password.invalid) {
-          <small>La contrasena debe tener al menos 6 caracteres.</small>
+          <small>La contrase&ntilde;a debe tener al menos 6 caracteres.</small>
         }
       </label>
 
@@ -45,5 +45,10 @@
         {{ isSubmitting() ? 'Validando...' : 'Entrar' }}
       </button>
     </form>
+
+    <p class="alternate-copy">
+      &iquest;Todav&iacute;a no tienes cuenta?
+      <a routerLink="/register" class="alternate-link">Reg&iacute;strate</a>
+    </p>
   </section>
 </app-auth-shell>

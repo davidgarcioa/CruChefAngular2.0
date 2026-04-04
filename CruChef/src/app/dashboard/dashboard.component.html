@@ -1,7 +1,7 @@
-<main class="main-layout">
+﻿<main class="main-layout">
   <app-sidebar [items]="navigationItems" />
 
-  <section class="content-shell">
+  <section class="content-shell" [class.content-shell--dashboard]="currentView === 'dashboard'">
     <header class="content-header">
       <div class="header-copy">
         <p class="eyebrow">Panel de gestion gastronomica</p>
@@ -11,7 +11,117 @@
       <app-search-bar />
     </header>
 
-    @if (currentView === 'restaurants') {
+    @if (currentView === 'dashboard') {
+      <section class="history-grid history-grid--dashboard section-block fade-slide">
+        @for (metric of dashboardMetrics(); track metric.label) {
+          <article class="history-metric-card history-metric-card--dashboard">
+            <p class="history-metric-label">{{ metric.label }}</p>
+            <h2>{{ metric.value }}</h2>
+            <p>{{ metric.detail }}</p>
+          </article>
+        }
+      </section>
+
+      <section class="dashboard-board section-block fade-slide delay-1">
+        <section class="dashboard-spotlight" *ngIf="dashboardSpotlight() as spotlight; else emptyDashboardSpotlight">
+          <div class="dashboard-spotlight-copy">
+            <p class="eyebrow">Plato con mejor pulso</p>
+            <h2>{{ spotlight.name }}</h2>
+            <p>
+              {{ spotlight.restaurant }} mantiene este plato arriba por precio, calificacion y presencia
+              en el panel.
+            </p>
+          </div>
+
+          <div class="dashboard-spotlight-body">
+            <div class="dashboard-spotlight-visual">
+              <img [src]="spotlight.imageUrl" [alt]="spotlight.name" />
+            </div>
+
+            <div class="dashboard-spotlight-stats">
+              <span class="dashboard-pill">{{ spotlight.category }}</span>
+              <div class="dashboard-kpi">
+                <strong>{{ spotlight.price }}</strong>
+                <span>Precio visible</span>
+              </div>
+              <div class="dashboard-kpi">
+                <strong>{{ spotlight.rating }}</strong>
+                <span>Calificacion actual</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <ng-template #emptyDashboardSpotlight>
+          <section class="dashboard-spotlight dashboard-spotlight--empty">
+            <p class="eyebrow">Panel listo</p>
+            <h2>Sin platos cargados aun</h2>
+            <p>Agrega el primer plato en Restaurantes para activar el resumen automatico del dashboard.</p>
+          </section>
+        </ng-template>
+
+        <section class="history-panel dashboard-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Resumen operativo</h2>
+              <p><span>{{ dashboardHealthRows().length }}</span> focos rapidos del turno</p>
+            </div>
+          </div>
+
+          <div class="dashboard-health">
+            @for (row of dashboardHealthRows(); track row.label) {
+              <article class="dashboard-health-row" [class.dashboard-health-row--good]="row.tone === 'good'" [class.dashboard-health-row--warn]="row.tone === 'warn'" [class.dashboard-health-row--accent]="row.tone === 'accent'">
+                <strong>{{ row.label }}</strong>
+                <p>{{ row.detail }}</p>
+              </article>
+            }
+          </div>
+
+          <div class="dashboard-list">
+            @for (dish of dashboardFeaturedDishes().slice(0, 3); track dish.id) {
+              <article class="dashboard-list-item">
+                <div class="dashboard-list-copy">
+                  <strong>{{ dish.name }}</strong>
+                  <p>{{ dish.restaurant }}</p>
+                </div>
+                <div class="dashboard-list-meta">
+                  <span>{{ dish.rating.toFixed(1) }} pts</span>
+                  <strong>${{ dish.price.toLocaleString('es-CO') }}</strong>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="history-panel dashboard-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Movimiento inmediato</h2>
+              <p><span>{{ orderRows().slice(0, 3).length }}</span> ordenes para seguimiento rapido</p>
+            </div>
+          </div>
+
+          <div class="history-timeline dashboard-timeline">
+            @for (order of orderRows().slice(0, 3); track order.code) {
+              <article class="order-card" [class.order-card--pending]="order.status === 'Pendiente'" [class.order-card--progress]="order.status === 'En preparacion'" [class.order-card--ready]="order.status === 'Listo'">
+                <div class="order-card-topline">
+                  <div>
+                    <strong>{{ order.code }}</strong>
+                    <p>{{ order.customer }}</p>
+                  </div>
+                  <span class="order-status">{{ order.status }}</span>
+                </div>
+                <div class="order-card-meta">
+                  <span>{{ order.restaurant }}</span>
+                  <span>{{ order.total }}</span>
+                  <span>{{ order.eta }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      </section>
+    } @else if (currentView === 'restaurants') {
       <section class="section-block fade-slide">
         <div class="section-heading">
           <div>
@@ -120,29 +230,151 @@
             </div>
           </div>
 
-          <div class="dish-row">
-            @for (dish of filteredDishes(); track dish.id; let index = $index) {
-              <div class="dish-item">
-                <app-dish-card [dish]="dish" [animationDelay]="index" />
-              <div class="dish-actions">
-                  <button
-                    type="button"
-                    class="mini-button"
-                    [disabled]="!isPersistedDish(dish)"
-                    (click)="editDish(dish)"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    class="mini-button mini-button--danger"
-                    [disabled]="!isPersistedDish(dish)"
-                    (click)="deleteDish(dish.id)"
-                  >
-                    Eliminar
-                  </button>
+          @if (filteredDishes().length) {
+            <div class="dish-carousel">
+              <div class="dish-track">
+                <div class="dish-lane" aria-hidden="false">
+                  @for (dish of filteredDishes(); track dish.id; let index = $index) {
+                    <div class="dish-item dish-item--carousel">
+                      <app-dish-card [dish]="dish" [animationDelay]="0" />
+                    </div>
+                  }
+                </div>
+
+                <div class="dish-lane" aria-hidden="true">
+                  @for (dish of filteredDishes(); track dish.id + '-clone'; let index = $index) {
+                    <div class="dish-item dish-item--carousel">
+                      <app-dish-card [dish]="dish" [animationDelay]="0" />
+                    </div>
+                  }
                 </div>
               </div>
+            </div>
+          } @else {
+            <p class="empty-state">No hay platos disponibles en esta categoria.</p>
+          }
+        </section>
+      </section>
+    } @else if (currentView === 'orders') {
+      <section class="history-grid section-block fade-slide">
+        @for (metric of orderMetrics(); track metric.label) {
+          <article class="history-metric-card">
+            <p class="history-metric-label">{{ metric.label }}</p>
+            <h2>{{ metric.value }}</h2>
+            <p>{{ metric.detail }}</p>
+          </article>
+        }
+      </section>
+
+      <section class="history-layout section-block fade-slide delay-1">
+        <section class="history-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Flujo de ordenes</h2>
+              <p><span>{{ orderRows().length }}</span> ordenes visibles en seguimiento</p>
+            </div>
+          </div>
+
+          <div class="history-timeline">
+            @for (order of orderRows(); track order.code) {
+              <article class="order-card" [class.order-card--pending]="order.status === 'Pendiente'" [class.order-card--progress]="order.status === 'En preparacion'" [class.order-card--ready]="order.status === 'Listo'">
+                <div class="order-card-topline">
+                  <div>
+                    <strong>{{ order.code }}</strong>
+                    <p>{{ order.customer }}</p>
+                  </div>
+                  <span class="order-status">{{ order.status }}</span>
+                </div>
+                <div class="order-card-meta">
+                  <span>{{ order.restaurant }}</span>
+                  <span>{{ order.total }}</span>
+                  <span>{{ order.eta }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="history-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Carga por restaurante</h2>
+              <p><span>{{ restaurantLoadRows().length }}</span> restaurantes con ordenes activas</p>
+            </div>
+          </div>
+
+          <div class="history-breakdown">
+            @for (row of restaurantLoadRows(); track row.restaurant) {
+              <article class="history-breakdown-row">
+                <div class="history-breakdown-copy">
+                  <strong>{{ row.restaurant }}</strong>
+                  <span>{{ row.orders }} ordenes</span>
+                </div>
+                <div class="history-breakdown-bar">
+                  <div class="history-breakdown-fill" [style.width.%]="row.share"></div>
+                </div>
+                <p>{{ row.share }}%</p>
+              </article>
+            }
+          </div>
+        </section>
+      </section>
+    } @else if (currentView === 'history') {
+      <section class="history-grid section-block fade-slide">
+        @for (metric of historyMetrics(); track metric.label) {
+          <article class="history-metric-card">
+            <p class="history-metric-label">{{ metric.label }}</p>
+            <h2>{{ metric.value }}</h2>
+            <p>{{ metric.detail }}</p>
+          </article>
+        }
+      </section>
+
+      <section class="history-layout section-block fade-slide delay-1">
+        <section class="history-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Actividad reciente</h2>
+              <p><span>{{ historyEntries().length }}</span> movimientos visibles del catalogo</p>
+            </div>
+          </div>
+
+          <div class="history-timeline">
+            @for (entry of historyEntries(); track entry.title) {
+              <article class="history-entry" [class.history-entry--created]="entry.tone === 'created'" [class.history-entry--updated]="entry.tone === 'updated'" [class.history-entry--highlight]="entry.tone === 'highlight'">
+                <div class="history-entry-marker"></div>
+                <div class="history-entry-copy">
+                  <div class="history-entry-topline">
+                    <h3>{{ entry.title }}</h3>
+                    <span>{{ entry.time }}</span>
+                  </div>
+                  <p>{{ entry.detail }}</p>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="history-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Distribucion por categoria</h2>
+              <p><span>{{ historyCategoryRows().length }}</span> categorias con actividad registrada</p>
+            </div>
+          </div>
+
+          <div class="history-breakdown">
+            @for (row of historyCategoryRows(); track row.name) {
+              <article class="history-breakdown-row">
+                <div class="history-breakdown-copy">
+                  <strong>{{ row.name }}</strong>
+                  <span>{{ row.total }} platos</span>
+                </div>
+                <div class="history-breakdown-bar">
+                  <div class="history-breakdown-fill" [style.width.%]="row.share"></div>
+                </div>
+                <p>{{ row.share }}%</p>
+              </article>
             }
           </div>
         </section>

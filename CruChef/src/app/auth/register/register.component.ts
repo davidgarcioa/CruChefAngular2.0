@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import {
   AbstractControl,
@@ -7,7 +7,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../auth.service';
 import { AuthShellComponent } from '../auth-shell/auth-shell.component';
@@ -28,7 +28,7 @@ const passwordMatchValidator = (
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AuthShellComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, AuthShellComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
 })

@@ -1,4 +1,4 @@
-:host {
+﻿:host {
   display: block;
 }
 
@@ -105,4 +105,16 @@
 .submit-button:hover {
   transform: translateY(-1px);
   filter: brightness(1.03);
+}
+
+.alternate-copy {
+  margin: 1.2rem 0 0;
+  text-align: center;
+  color: #9d9d9d;
+}
+
+.alternate-link {
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
 }

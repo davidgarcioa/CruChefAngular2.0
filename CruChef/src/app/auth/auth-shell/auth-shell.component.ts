@@ -1,10 +1,8 @@
-import { Component, Input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+﻿import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-auth-shell',
   standalone: true,
-  imports: [RouterLink],
   templateUrl: './auth-shell.component.html',
   styleUrl: './auth-shell.component.css',
 })
