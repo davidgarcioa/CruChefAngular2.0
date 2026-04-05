@@ -3,6 +3,8 @@ export interface Dish {
   name: string;
   price: number;
   rating: number;
+  ratingCount: number;
+  ratingTotal: number;
   restaurant: string;
   restaurantId: string;
   restaurantName: string;

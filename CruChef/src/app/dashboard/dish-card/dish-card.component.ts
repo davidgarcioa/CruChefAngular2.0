@@ -15,6 +15,11 @@ export class DishCardComponent {
   @Input() animationDelay = 0;
 
   get stars(): number[] {
-    return Array.from({ length: this.dish.rating }, (_, index) => index);
+    const roundedRating = Math.max(0, Math.round(this.dish.rating));
+    return Array.from({ length: roundedRating }, (_, index) => index);
+  }
+
+  get hasRatings(): boolean {
+    return this.dish.ratingCount > 0 && this.dish.rating > 0;
   }
 }

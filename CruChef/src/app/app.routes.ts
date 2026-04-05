@@ -24,7 +24,19 @@ export const routes: Routes = [
     path: 'user',
     component: UserMenuComponent,
     canActivate: [authGuard, roleGuard],
-    data: { role: 'user' },
+    data: { role: 'user', view: 'menu' },
+  },
+  {
+    path: 'user/orders',
+    component: UserMenuComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'user', view: 'orders' },
+  },
+  {
+    path: 'user/history',
+    component: UserMenuComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'user', view: 'history' },
   },
   {
     path: 'dashboard',

@@ -28,89 +28,11 @@
       </section>
 
       <section class="owner-layout section-block fade-slide delay-1">
-        <section class="owner-panel">
+        <section class="restaurants-panel restaurants-panel--summary">
           <div class="section-heading section-heading--stacked">
             <div>
-              <h2>{{ editingRestaurantId() ? 'Editar restaurante' : 'Registrar restaurante' }}</h2>
-              <p>
-                <span>RUT</span> y datos legales para validar que el negocio existe de verdad.
-              </p>
-            </div>
-          </div>
-
-          <form class="owner-form" [formGroup]="restaurantForm" (ngSubmit)="submitRestaurant()">
-            @if (restaurantSuccess()) {
-              <p class="status-message status-message--success">{{ restaurantSuccess() }}</p>
-            }
-
-            @if (restaurantError()) {
-              <p class="status-message status-message--error">{{ restaurantError() }}</p>
-            }
-
-            <label class="field">
-              <span>Nombre del restaurante</span>
-              <input type="text" formControlName="name" placeholder="Ej. CruChef House" />
-            </label>
-
-            <label class="field">
-              <span>Direccion</span>
-              <input type="text" formControlName="address" placeholder="Ej. Carrera 10 # 20-30" />
-            </label>
-
-            <div class="field-grid">
-              <label class="field">
-                <span>Ciudad</span>
-                <input type="text" formControlName="city" placeholder="Ej. Bogota" />
-              </label>
-
-              <label class="field">
-                <span>Telefono</span>
-                <input type="text" formControlName="phone" placeholder="Ej. 3001234567" />
-              </label>
-            </div>
-
-            <div class="field-grid">
-              <label class="field">
-                <span>Horarios</span>
-                <input type="text" formControlName="schedule" placeholder="Lun-Dom 8:00 AM - 10:00 PM" />
-              </label>
-
-              <label class="field">
-                <span>RUT</span>
-                <input type="text" formControlName="rut" placeholder="Numero de RUT" />
-              </label>
-            </div>
-
-            <div class="owner-note">
-              El restaurante queda vinculado al correo con el que iniciaste sesion y su estado inicial es
-              <strong>pendiente de verificacion</strong>.
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" class="primary-button" [disabled]="isSavingRestaurant()">
-                {{
-                  isSavingRestaurant()
-                    ? 'Guardando...'
-                    : editingRestaurantId()
-                      ? 'Actualizar restaurante'
-                      : 'Crear restaurante'
-                }}
-              </button>
-
-              @if (editingRestaurantId()) {
-                <button type="button" class="secondary-button" (click)="resetRestaurantForm()">
-                  Cancelar
-                </button>
-              }
-            </div>
-          </form>
-        </section>
-
-        <section class="restaurants-panel">
-          <div class="section-heading section-heading--stacked">
-            <div>
-              <h2>Tus restaurantes</h2>
-              <p><span>users</span> / &#123;uid&#125; / restaurants / &#123;restaurantId&#125;</p>
+              <h2>Tu restaurante</h2>
+              <p><span>Propietario</span> ya no crea restaurantes desde esta ventana.</p>
             </div>
           </div>
 
@@ -127,7 +49,11 @@
                       <h3>{{ restaurant.name }}</h3>
                       <p>{{ restaurant.city }} - {{ restaurant.phone }}</p>
                     </div>
-                    <span class="verification-pill">
+                    <span
+                      class="verification-pill"
+                      [class.verification-pill--verified]="restaurant.verificationStatus === 'verified'"
+                      [class.verification-pill--pending]="restaurant.verificationStatus !== 'verified'"
+                    >
                       {{ restaurant.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
                     </span>
                   </div>
@@ -136,23 +62,6 @@
                   <p>{{ restaurant.schedule }}</p>
                   <p>RUT: {{ restaurant.rut }}</p>
                   <p>Correo vinculado: {{ restaurant.ownerEmail }}</p>
-
-                  <div class="restaurant-card__actions">
-                    <button
-                      type="button"
-                      class="mini-button"
-                      (click)="editRestaurant(restaurant); $event.stopPropagation()"
-                    >
-                      Editar datos
-                    </button>
-                    <button
-                      type="button"
-                      class="mini-button mini-button--danger"
-                      (click)="deleteRestaurant(restaurant.id); $event.stopPropagation()"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
                 </article>
               }
             </div>
@@ -160,8 +69,7 @@
             <div class="empty-card">
               <h3>No tienes restaurantes creados</h3>
               <p>
-                Registra primero el negocio del propietario. Luego todo plato nuevo se guardara
-                dentro de ese restaurante en Firebase.
+                Primero completa el flujo de propietario para crear tu restaurante.
               </p>
             </div>
           }
@@ -196,41 +104,28 @@
                 <input type="text" formControlName="name" placeholder="Ej. Hamburguesa doble" />
               </label>
 
-              <div class="field-grid">
-                <label class="field">
-                  <span>Precio</span>
-                  <input type="number" formControlName="price" min="1000" step="500" />
-                </label>
+              <label class="field">
+                <span>Precio</span>
+                <input type="number" formControlName="price" min="1000" step="500" />
+              </label>
 
-                <label class="field">
-                  <span>Calificacion</span>
-                  <input type="number" formControlName="rating" min="1" max="5" />
-                </label>
-              </div>
+              <label class="field">
+                <span>Categoria del plato</span>
+                <select formControlName="categoryId">
+                  @for (category of categoryOptions; track category.id) {
+                    <option [value]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </label>
 
-              <div class="field-grid">
-                <label class="field">
-                  <span>Categoria</span>
-                  <select formControlName="categoryId">
-                    @for (category of categoryOptions; track category.id) {
-                      <option [value]="category.id">{{ category.name }}</option>
-                    }
-                  </select>
-                </label>
-
-                <label class="field">
-                  <span>Icono de comida</span>
-                  <select formControlName="imageKey">
-                    @for (option of imageOptions; track option.key) {
-                      <option [value]="option.key">{{ option.label }}</option>
-                    }
-                  </select>
-                </label>
-              </div>
+              <p class="owner-note">
+                La categoria define automaticamente el icono del plato. La calificacion ya no la
+                define el propietario: los usuarios la dejan cuando el pedido ha sido entregado.
+              </p>
 
               <div class="image-preview">
                 <img [src]="previewImageUrl()" [alt]="dishForm.controls.name.value || 'Preview'" />
-                <p>El plato solo puede usar uno de los iconos definidos por la plataforma.</p>
+                <p>La imagen cambia en tiempo real segun la categoria que selecciones.</p>
               </div>
 
               <div class="form-actions">
@@ -291,7 +186,11 @@
                 <p>{{ viewedDish()!.restaurantName }}</p>
                 <p class="dish-viewer__price">{{ viewedDish()!.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
                 <p>Categoria: {{ viewedDishCategoryName() }}</p>
-                <p>Calificacion: {{ viewedDish()!.rating }} / 5</p>
+                @if (viewedDish()!.ratingCount > 0) {
+                  <p>Calificacion promedio: {{ viewedDish()!.rating }} / 5 con {{ viewedDish()!.ratingCount }} reseñas</p>
+                } @else {
+                  <p>Calificacion pendiente: aun no hay pedidos calificados por usuarios.</p>
+                }
               </div>
             </article>
           }
@@ -334,16 +233,344 @@
           }
         </section>
       </section>
-    } @else {
-      <section class="placeholder-card fade-slide">
-        <p class="eyebrow">Modulo en construccion</p>
-        <h2>{{ viewTitle() }}</h2>
-        <p>
-          La shell principal ya esta montada. Esta seccion puede reutilizar el mismo
-          sidebar, buscador y sistema de cards para ampliar el panel sin rehacer layout.
-        </p>
-        <a routerLink="/restaurants" class="placeholder-link">Ir a Propietario</a>
+    } @else if (currentView() === 'orders') {
+      <section class="section-block fade-slide">
+        <div class="section-heading">
+          <div>
+            <h2>Pedidos recibidos</h2>
+            <p>
+              <span>{{ visibleActiveOwnerOrders().length }}</span> pedidos activos para atender.
+            </p>
+          </div>
+        </div>
+
+        <div class="order-filter">
+          <button
+            type="button"
+            class="restaurant-filter-pill"
+            [class.is-active]="selectedOrderRestaurantId() === 'all'"
+            (click)="selectOrderRestaurant('all')"
+          >
+            Todos
+          </button>
+
+          @for (restaurant of restaurants(); track restaurant.id) {
+            <button
+              type="button"
+              class="restaurant-filter-pill"
+              [class.is-active]="selectedOrderRestaurantId() === restaurant.id"
+              (click)="selectOrderRestaurant(restaurant.id)"
+            >
+              {{ restaurant.name }}
+            </button>
+          }
+        </div>
+
+        @if (ownerOrderSuccess()) {
+          <p class="status-message status-message--success">{{ ownerOrderSuccess() }}</p>
+        }
+
+        @if (ownerOrderError()) {
+          <p class="status-message status-message--error">{{ ownerOrderError() }}</p>
+        }
+
+        @if (visibleActiveOwnerOrders().length > 0) {
+          <div class="orders-grid">
+            @for (order of visibleActiveOwnerOrders(); track order.id) {
+              <article class="order-card">
+                <div class="order-card__top">
+                  <div>
+                    <p class="eyebrow">{{ order.restaurantName }}</p>
+                    <h3>{{ order.dishName }}</h3>
+                    <p>{{ order.customerName }} - {{ order.customerEmail }}</p>
+                  </div>
+
+                  <span [class]="getOrderStatusClass(order.status)">
+                    {{ getOrderStatusLabel(order.status) }}
+                  </span>
+                </div>
+
+                <div class="order-card__body">
+                  <img [src]="order.dishImageUrl" [alt]="order.dishName" />
+                  <div>
+                    <p class="order-card__price">
+                      {{ order.quantity }} x
+                      {{ order.unitPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </p>
+                    <p>Total: {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+                    <p>Creado: {{ order.createdAtMs | date: 'short' }}</p>
+                    @if (order.notes) {
+                      <p>Indicaciones: {{ order.notes }}</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="dish-actions">
+                  @for (status of getNextStatuses(order); track status) {
+                    <button
+                      type="button"
+                      class="mini-button"
+                      [class.mini-button--danger]="status === 'cancelled'"
+                      [disabled]="updatingOrderId() === order.id"
+                      (click)="updateOrderStatus(order, status)"
+                    >
+                      {{ getOrderStatusLabel(status) }}
+                    </button>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-card">
+            <h3>No tienes pedidos activos</h3>
+            <p>Cuando los usuarios pidan platos, los veras aqui para cambiar su estado.</p>
+          </div>
+        }
       </section>
+    } @else if (currentView() === 'history') {
+      <section class="section-block fade-slide">
+        <div class="section-heading">
+          <div>
+            <h2>Historial de pedidos</h2>
+            <p>
+              <span>{{ visibleHistoricalOwnerOrders().length }}</span> pedidos finalizados en tus restaurantes.
+            </p>
+          </div>
+        </div>
+
+        <div class="order-filter">
+          <button
+            type="button"
+            class="restaurant-filter-pill"
+            [class.is-active]="selectedOrderRestaurantId() === 'all'"
+            (click)="selectOrderRestaurant('all')"
+          >
+            Todos
+          </button>
+
+          @for (restaurant of restaurants(); track restaurant.id) {
+            <button
+              type="button"
+              class="restaurant-filter-pill"
+              [class.is-active]="selectedOrderRestaurantId() === restaurant.id"
+              (click)="selectOrderRestaurant(restaurant.id)"
+            >
+              {{ restaurant.name }}
+            </button>
+          }
+        </div>
+
+        @if (visibleHistoricalOwnerOrders().length > 0) {
+          <div class="orders-grid">
+            @for (order of visibleHistoricalOwnerOrders(); track order.id) {
+              <article class="order-card">
+                <div class="order-card__top">
+                  <div>
+                    <p class="eyebrow">{{ order.restaurantName }}</p>
+                    <h3>{{ order.dishName }}</h3>
+                    <p>{{ order.customerName }} - {{ order.customerEmail }}</p>
+                  </div>
+
+                  <span [class]="getOrderStatusClass(order.status)">
+                    {{ getOrderStatusLabel(order.status) }}
+                  </span>
+                </div>
+
+                <div class="order-card__body">
+                  <img [src]="order.dishImageUrl" [alt]="order.dishName" />
+                  <div>
+                    <p class="order-card__price">
+                      Total: {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </p>
+                    <p>Pedido: {{ order.createdAtMs | date: 'short' }}</p>
+                    @if (order.deliveredAtMs) {
+                      <p>Entregado: {{ order.deliveredAtMs | date: 'short' }}</p>
+                    }
+                    @if (order.rating != null) {
+                      <p>Calificacion del usuario: {{ order.rating }}/5</p>
+                    }
+                    @if (order.reviewText) {
+                      <p>Comentario: {{ order.reviewText }}</p>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-card">
+            <h3>No hay historial todavia</h3>
+            <p>Los pedidos entregados o cancelados apareceran aqui con la reseña del usuario.</p>
+          </div>
+        }
+      </section>
+    } @else {
+      <section class="section-block fade-slide">
+        <div class="section-heading">
+          <div>
+            <h2>Dashboard del restaurante</h2>
+            <p>
+              @if (selectedRestaurant()) {
+                <span>{{ selectedRestaurant()!.name }}</span> como restaurante activo para analizar.
+              } @else {
+                <span>Selecciona</span> un restaurante para ver sus metricas.
+              }
+            </p>
+          </div>
+        </div>
+
+        @if (restaurants().length > 0) {
+          <div class="order-filter">
+            @for (restaurant of restaurants(); track restaurant.id) {
+              <button
+                type="button"
+                class="restaurant-filter-pill"
+                [class.is-active]="selectedRestaurantId() === restaurant.id"
+                (click)="selectRestaurant(restaurant.id)"
+              >
+                {{ restaurant.name }}
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      @if (selectedRestaurant()) {
+        <section class="dashboard-layout section-block fade-slide delay-1">
+          <article class="dashboard-hero">
+            <div>
+              <p class="eyebrow">Restaurante activo</p>
+              <h2>{{ selectedRestaurant()!.name }}</h2>
+              <p>
+                {{ selectedRestaurant()!.city }} · {{ selectedRestaurant()!.phone }} ·
+                {{ selectedRestaurant()!.schedule }}
+              </p>
+            </div>
+
+            <span
+              class="verification-pill"
+              [class.verification-pill--verified]="selectedRestaurant()!.verificationStatus === 'verified'"
+              [class.verification-pill--pending]="selectedRestaurant()!.verificationStatus !== 'verified'"
+            >
+              {{ selectedRestaurant()!.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
+            </span>
+          </article>
+
+          <section class="stats-grid">
+            <article class="stat-card">
+              <p class="eyebrow">Ingresos</p>
+              <h3>{{ dashboardRevenue() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</h3>
+              <p>Ventas confirmadas en pedidos entregados.</p>
+            </article>
+
+            <article class="stat-card">
+              <p class="eyebrow">Pedidos activos</p>
+              <h3>{{ dashboardActiveOrdersCount() }}</h3>
+              <p>Pedidos pendientes, aceptados, en preparacion o listos.</p>
+            </article>
+
+            <article class="stat-card">
+              <p class="eyebrow">Entregados</p>
+              <h3>{{ dashboardDeliveredOrders() }}</h3>
+              <p>Pedidos finalizados con exito en este restaurante.</p>
+            </article>
+
+            <article class="stat-card">
+              <p class="eyebrow">Cancelados</p>
+              <h3>{{ dashboardCancelledOrders() }}</h3>
+              <p>Pedidos cerrados sin entrega.</p>
+            </article>
+
+            <article class="stat-card">
+              <p class="eyebrow">Ticket promedio</p>
+              <h3>{{ dashboardAverageTicket() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</h3>
+              <p>Valor medio por pedido entregado.</p>
+            </article>
+
+            <article class="stat-card">
+              <p class="eyebrow">Calificacion</p>
+              <h3>
+                @if (dashboardRatingsCount() > 0) {
+                  {{ dashboardAverageRating() }}/5
+                } @else {
+                  Sin notas
+                }
+              </h3>
+              <p>{{ dashboardRatingsCount() }} reseñas registradas por usuarios.</p>
+            </article>
+          </section>
+
+          <section class="dashboard-details">
+            <article class="dashboard-panel">
+              <div class="section-heading section-heading--stacked">
+                <div>
+                  <h2>Platos mas pedidos</h2>
+                  <p><span>{{ dashboardTopDishes().length }}</span> referencias destacadas.</p>
+                </div>
+              </div>
+
+              @if (dashboardTopDishes().length > 0) {
+                <div class="top-dish-list">
+                  @for (dish of dashboardTopDishes(); track dish.dishId) {
+                    <article class="top-dish-item">
+                      <img [src]="dish.imageUrl" [alt]="dish.name" />
+                      <div>
+                        <h3>{{ dish.name }}</h3>
+                        <p>{{ dish.orders }} unidades pedidas</p>
+                      </div>
+                      <strong>{{ dish.revenue | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-card">
+                  <h3>Aun no hay pedidos suficientes</h3>
+                  <p>Cuando entren ordenes de usuarios, aqui veras los platos mas vendidos.</p>
+                </div>
+              }
+            </article>
+
+            <article class="dashboard-panel">
+              <div class="section-heading section-heading--stacked">
+                <div>
+                  <h2>Actividad reciente</h2>
+                  <p><span>{{ dashboardRecentOrders().length }}</span> movimientos recientes.</p>
+                </div>
+              </div>
+
+              @if (dashboardRecentOrders().length > 0) {
+                <div class="recent-order-list">
+                  @for (order of dashboardRecentOrders(); track order.id) {
+                    <article class="recent-order-item">
+                      <div>
+                        <h3>{{ order.customerName }}</h3>
+                        <p>{{ order.dishName }} · {{ order.createdAtMs | date: 'short' }}</p>
+                      </div>
+                      <div class="recent-order-meta">
+                        <span [class]="getOrderStatusClass(order.status)">
+                          {{ getOrderStatusLabel(order.status) }}
+                        </span>
+                        <strong>{{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-card">
+                  <h3>Sin actividad reciente</h3>
+                  <p>El dashboard mostrara la actividad apenas empiecen a llegar pedidos.</p>
+                </div>
+              }
+            </article>
+          </section>
+        </section>
+      } @else {
+        <section class="empty-card fade-slide delay-1">
+          <h3>Sin restaurante activo</h3>
+          <p>Crea o selecciona un restaurante para revisar sus estadisticas en tiempo real.</p>
+        </section>
+      }
     }
   </section>
 </main>

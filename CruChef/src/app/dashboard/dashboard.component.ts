@@ -2,15 +2,23 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 
+import { OrderService } from '../orders/order.service';
+import {
+  Order,
+  OrderStatus,
+  activeOrderStatuses,
+  historicalOrderStatuses,
+  orderStatusLabelMap,
+} from '../models/order.model';
 import { Dish } from '../models/dish.model';
 import { Restaurant } from '../models/restaurant.model';
 import { CategorySliderComponent } from './category-slider/category-slider.component';
-import { categories, dishImageOptions, ownerNavigationItems } from './dashboard.data';
+import { categories, getCategoryImageUrl, ownerNavigationItems } from './dashboard.data';
 import { DishCardComponent } from './dish-card/dish-card.component';
-import { DishFormValue, OwnerService, RestaurantFormValue } from './owner.service';
+import { DishFormValue, OwnerService } from './owner.service';
 import { SearchBarComponent } from './search-bar/search-bar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 
@@ -19,7 +27,6 @@ import { SidebarComponent } from './sidebar/sidebar.component';
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
     ReactiveFormsModule,
     SidebarComponent,
     SearchBarComponent,
@@ -33,43 +40,33 @@ export class DashboardComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly ownerService = inject(OwnerService);
+  private readonly orderService = inject(OrderService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly navigationItems = ownerNavigationItems;
   readonly categories = categories;
   readonly categoryOptions = categories.filter((category) => category.id !== 'all');
-  readonly imageOptions = dishImageOptions;
   readonly selectedCategoryId = signal('all');
   readonly restaurants = signal<Restaurant[]>([]);
   readonly dishes = signal<Dish[]>([]);
+  readonly ownerOrders = signal<Order[]>([]);
   readonly selectedRestaurantId = signal<string | null>(null);
-  readonly editingRestaurantId = signal<string | null>(null);
+  readonly selectedOrderRestaurantId = signal<'all' | string>('all');
   readonly editingDishId = signal<string | null>(null);
   readonly viewedDish = signal<Dish | null>(null);
-  readonly isSavingRestaurant = signal(false);
   readonly isSavingDish = signal(false);
-  readonly restaurantError = signal('');
-  readonly restaurantSuccess = signal('');
+  readonly updatingOrderId = signal<string | null>(null);
   readonly dishError = signal('');
   readonly dishSuccess = signal('');
+  readonly ownerOrderError = signal('');
+  readonly ownerOrderSuccess = signal('');
   readonly currentView = signal(
     (this.route.snapshot.data['view'] as string | undefined) ?? 'restaurants',
   );
 
-  readonly restaurantForm = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    address: ['', [Validators.required, Validators.minLength(5)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
-    phone: ['', [Validators.required, Validators.minLength(7)]],
-    schedule: ['', [Validators.required, Validators.minLength(3)]],
-    rut: ['', [Validators.required, Validators.minLength(6)]],
-  });
-
   readonly dishForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     price: [24000, [Validators.required, Validators.min(1000)]],
-    rating: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
-    imageKey: ['burger', Validators.required],
     categoryId: ['burgers', Validators.required],
   });
 
@@ -89,11 +86,7 @@ export class DashboardComponent {
   });
 
   readonly previewImageUrl = computed(() => {
-    const selectedKey = this.dishForm.controls.imageKey.value;
-    return (
-      this.imageOptions.find((option) => option.key === selectedKey)?.imageUrl ??
-      this.imageOptions[0].imageUrl
-    );
+    return getCategoryImageUrl(this.dishForm.controls.categoryId.value);
   });
 
   readonly viewedDishCategoryName = computed(() => {
@@ -104,6 +97,101 @@ export class DashboardComponent {
 
     return this.categories.find((category) => category.id === dish.categoryId)?.name ?? 'Categoria';
   });
+
+  readonly activeOwnerOrders = computed(() =>
+    this.ownerOrders().filter((order) => activeOrderStatuses.includes(order.status)),
+  );
+
+  readonly historicalOwnerOrders = computed(() =>
+    this.ownerOrders().filter((order) => historicalOrderStatuses.includes(order.status)),
+  );
+
+  readonly visibleActiveOwnerOrders = computed(() =>
+    this.filterOrdersByRestaurant(this.activeOwnerOrders()),
+  );
+
+  readonly visibleHistoricalOwnerOrders = computed(() =>
+    this.filterOrdersByRestaurant(this.historicalOwnerOrders()),
+  );
+
+  readonly dashboardOrders = computed(() => {
+    const restaurant = this.selectedRestaurant();
+
+    if (!restaurant) {
+      return [];
+    }
+
+    return this.ownerOrders()
+      .filter((order) => order.restaurantId === restaurant.id)
+      .sort((left, right) => right.createdAtMs - left.createdAtMs);
+  });
+
+  readonly dashboardRevenue = computed(() =>
+    this.dashboardOrders()
+      .filter((order) => order.status === 'delivered')
+      .reduce((total, order) => total + order.totalPrice, 0),
+  );
+
+  readonly dashboardDeliveredOrders = computed(
+    () => this.dashboardOrders().filter((order) => order.status === 'delivered').length,
+  );
+
+  readonly dashboardCancelledOrders = computed(
+    () => this.dashboardOrders().filter((order) => order.status === 'cancelled').length,
+  );
+
+  readonly dashboardActiveOrdersCount = computed(
+    () => this.dashboardOrders().filter((order) => activeOrderStatuses.includes(order.status)).length,
+  );
+
+  readonly dashboardAverageTicket = computed(() => {
+    const deliveredOrders = this.dashboardDeliveredOrders();
+    return deliveredOrders > 0 ? this.dashboardRevenue() / deliveredOrders : 0;
+  });
+
+  readonly dashboardRatingsCount = computed(() =>
+    this.dishes().reduce((total, dish) => total + dish.ratingCount, 0),
+  );
+
+  readonly dashboardAverageRating = computed(() => {
+    const totalRatings = this.dishes().reduce((total, dish) => total + dish.ratingTotal, 0);
+    const ratingsCount = this.dashboardRatingsCount();
+
+    return ratingsCount > 0 ? Number((totalRatings / ratingsCount).toFixed(1)) : 0;
+  });
+
+  readonly dashboardTopDishes = computed(() => {
+    const dishMap = new Map<
+      string,
+      { dishId: string; name: string; imageUrl: string; orders: number; revenue: number }
+    >();
+
+    this.dashboardOrders().forEach((order) => {
+      const current = dishMap.get(order.dishId) ?? {
+        dishId: order.dishId,
+        name: order.dishName,
+        imageUrl: order.dishImageUrl,
+        orders: 0,
+        revenue: 0,
+      };
+
+      current.orders += order.quantity;
+      current.revenue += order.totalPrice;
+      dishMap.set(order.dishId, current);
+    });
+
+    return Array.from(dishMap.values())
+      .sort((left, right) => {
+        if (right.orders !== left.orders) {
+          return right.orders - left.orders;
+        }
+
+        return right.revenue - left.revenue;
+      })
+      .slice(0, 4);
+  });
+
+  readonly dashboardRecentOrders = computed(() => this.dashboardOrders().slice(0, 5));
 
   readonly viewTitle = computed(() => {
     const currentView = this.currentView();
@@ -131,12 +219,21 @@ export class DashboardComponent {
         const currentId = this.selectedRestaurantId();
         if (restaurants.length === 0) {
           this.selectedRestaurantId.set(null);
+          this.selectedOrderRestaurantId.set('all');
           this.dishes.set([]);
           return;
         }
 
         if (!currentId || !restaurants.some((restaurant) => restaurant.id === currentId)) {
           this.selectedRestaurantId.set(restaurants[0].id);
+        }
+
+        const currentOrderFilter = this.selectedOrderRestaurantId();
+        if (
+          currentOrderFilter !== 'all' &&
+          !restaurants.some((restaurant) => restaurant.id === currentOrderFilter)
+        ) {
+          this.selectedOrderRestaurantId.set('all');
         }
       });
 
@@ -148,6 +245,22 @@ export class DashboardComponent {
       .subscribe((dishes) => {
         this.dishes.set(dishes);
       });
+
+    toObservable(this.restaurants)
+      .pipe(
+        switchMap((restaurants) => this.orderService.getOwnerOrders(restaurants)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (orders) => {
+          this.ownerOrders.set(orders);
+          this.ownerOrderError.set('');
+        },
+        error: (error) => {
+          this.ownerOrders.set([]);
+          this.ownerOrderError.set(this.orderService.getErrorMessage(error));
+        },
+      });
   }
 
   selectRestaurant(restaurantId: string): void {
@@ -157,88 +270,8 @@ export class DashboardComponent {
     this.resetDishForm();
   }
 
-  async submitRestaurant(): Promise<void> {
-    if (this.restaurantForm.invalid) {
-      this.restaurantForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSavingRestaurant.set(true);
-    this.restaurantError.set('');
-    this.restaurantSuccess.set('');
-
-    const payload = this.restaurantForm.getRawValue() as RestaurantFormValue;
-
-    try {
-      if (this.editingRestaurantId()) {
-        await this.ownerService.updateRestaurant(this.editingRestaurantId()!, payload);
-        this.restaurantSuccess.set('Datos del restaurante actualizados correctamente.');
-      } else {
-        const restaurantId = await this.ownerService.createRestaurant(payload);
-        this.selectedRestaurantId.set(restaurantId);
-        this.restaurantSuccess.set(
-          'Restaurante creado y vinculado al correo autenticado. Queda en verificacion.',
-        );
-      }
-
-      this.resetRestaurantForm();
-    } catch (error) {
-      this.restaurantError.set(this.ownerService.getErrorMessage(error));
-    } finally {
-      this.isSavingRestaurant.set(false);
-    }
-  }
-
-  editRestaurant(restaurant: Restaurant): void {
-    this.selectRestaurant(restaurant.id);
-    this.editingRestaurantId.set(restaurant.id);
-    this.restaurantError.set('');
-    this.restaurantSuccess.set('');
-    this.restaurantForm.setValue({
-      name: restaurant.name,
-      address: restaurant.address,
-      city: restaurant.city,
-      phone: restaurant.phone,
-      schedule: restaurant.schedule,
-      rut: restaurant.rut,
-    });
-  }
-
-  resetRestaurantForm(): void {
-    this.editingRestaurantId.set(null);
-    this.restaurantError.set('');
-    this.restaurantSuccess.set('');
-    this.restaurantForm.reset({
-      name: '',
-      address: '',
-      city: '',
-      phone: '',
-      schedule: '',
-      rut: '',
-    });
-  }
-
-  async deleteRestaurant(restaurantId: string): Promise<void> {
-    this.restaurantError.set('');
-    this.restaurantSuccess.set('');
-
-    try {
-      await this.ownerService.deleteRestaurant(restaurantId);
-
-      if (this.selectedRestaurantId() === restaurantId) {
-        this.selectedRestaurantId.set(null);
-        this.viewedDish.set(null);
-        this.resetDishForm();
-      }
-
-      if (this.editingRestaurantId() === restaurantId) {
-        this.resetRestaurantForm();
-      }
-
-      this.restaurantSuccess.set('Restaurante y platos eliminados correctamente.');
-    } catch (error) {
-      this.restaurantError.set(this.ownerService.getErrorMessage(error));
-    }
+  selectOrderRestaurant(restaurantId: 'all' | string): void {
+    this.selectedOrderRestaurantId.set(restaurantId);
   }
 
   async submitDish(): Promise<void> {
@@ -284,8 +317,6 @@ export class DashboardComponent {
     this.dishForm.setValue({
       name: dish.name,
       price: dish.price,
-      rating: dish.rating,
-      imageKey: dish.imageKey,
       categoryId: dish.categoryId,
     });
   }
@@ -330,9 +361,57 @@ export class DashboardComponent {
     this.dishForm.reset({
       name: '',
       price: 24000,
-      rating: 5,
-      imageKey: 'burger',
       categoryId: 'burgers',
     });
+  }
+
+  async updateOrderStatus(order: Order, status: OrderStatus): Promise<void> {
+    this.updatingOrderId.set(order.id);
+    this.ownerOrderError.set('');
+    this.ownerOrderSuccess.set('');
+
+    try {
+      await this.orderService.updateOrderStatus(order, status);
+      this.ownerOrderSuccess.set(
+        `Pedido de ${order.customerName} actualizado a ${this.getOrderStatusLabel(status).toLowerCase()}.`,
+      );
+    } catch (error) {
+      this.ownerOrderError.set(this.orderService.getErrorMessage(error));
+    } finally {
+      this.updatingOrderId.set(null);
+    }
+  }
+
+  getOrderStatusLabel(status: OrderStatus): string {
+    return orderStatusLabelMap[status];
+  }
+
+  getOrderStatusClass(status: OrderStatus): string {
+    return `verification-pill verification-pill--${status}`;
+  }
+
+  getNextStatuses(order: Order): OrderStatus[] {
+    switch (order.status) {
+      case 'pending':
+        return ['accepted', 'cancelled'];
+      case 'accepted':
+        return ['preparing', 'cancelled'];
+      case 'preparing':
+        return ['ready', 'cancelled'];
+      case 'ready':
+        return ['delivered'];
+      default:
+        return [];
+    }
+  }
+
+  private filterOrdersByRestaurant(orders: Order[]): Order[] {
+    const restaurantId = this.selectedOrderRestaurantId();
+
+    if (restaurantId === 'all') {
+      return orders;
+    }
+
+    return orders.filter((order) => order.restaurantId === restaurantId);
   }
 }

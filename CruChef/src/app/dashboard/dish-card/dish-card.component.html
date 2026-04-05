@@ -5,11 +5,16 @@
     <h3>{{ dish.name }}</h3>
     <p class="dish-price">{{ dish.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
 
-    <div class="dish-rating" aria-label="Calificacion">
-      @for (star of stars; track star) {
-        <span>&#9733;</span>
-      }
-    </div>
+    @if (hasRatings) {
+      <div class="dish-rating" aria-label="Calificacion">
+        @for (star of stars; track star) {
+          <span>&#9733;</span>
+        }
+        <small>({{ dish.ratingCount }})</small>
+      </div>
+    } @else {
+      <p class="dish-rating dish-rating--empty">Sin calificaciones</p>
+    }
 
     <p class="dish-restaurant">{{ dish.restaurantName }}</p>
   </div>

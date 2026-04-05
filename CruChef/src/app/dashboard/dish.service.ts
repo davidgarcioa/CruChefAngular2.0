@@ -10,7 +10,6 @@ import { defaultDishes, dishImageOptions, getDishImageUrl } from './dashboard.da
 export interface DishFormValue {
   name: string;
   price: number;
-  rating: number;
   restaurant: string;
   imageKey: string;
   categoryId: string;
@@ -106,7 +105,9 @@ export class DishService {
     return {
       name: payload.name.trim(),
       price: Number(payload.price),
-      rating: Number(payload.rating),
+      rating: 0,
+      ratingCount: 0,
+      ratingTotal: 0,
       restaurant: payload.restaurant.trim(),
       categoryId: payload.categoryId,
       imageKey: payload.imageKey,
@@ -124,6 +125,15 @@ export class DishService {
       name: String(document['name'] ?? ''),
       price: Number(document['price'] ?? 0),
       rating: Number(document['rating'] ?? 0),
+      ratingCount: Number(
+        document['ratingCount'] ??
+          (Number(document['rating'] ?? 0) > 0 ? 1 : 0),
+      ),
+      ratingTotal: Number(
+        document['ratingTotal'] ??
+          Number(document['rating'] ?? 0) *
+            Number(document['ratingCount'] ?? (Number(document['rating'] ?? 0) > 0 ? 1 : 0)),
+      ),
       restaurant: String(document['restaurant'] ?? restaurantName),
       restaurantId: String(document['restaurantId'] ?? ''),
       restaurantName,

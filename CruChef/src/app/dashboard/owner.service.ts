@@ -21,7 +21,7 @@ import { AuthService } from '../auth/auth.service';
 import { FirebaseService } from '../firebase.service';
 import { Dish } from '../models/dish.model';
 import { Restaurant } from '../models/restaurant.model';
-import { emptyDishes, getDishImageUrl } from './dashboard.data';
+import { emptyDishes, getCategoryImageKey, getDishImageUrl } from './dashboard.data';
 
 export interface RestaurantFormValue {
   name: string;
@@ -35,8 +35,6 @@ export interface RestaurantFormValue {
 export interface DishFormValue {
   name: string;
   price: number;
-  rating: number;
-  imageKey: string;
   categoryId: string;
 }
 
@@ -184,7 +182,7 @@ export class OwnerService {
     const user = await this.authService.requireVerifiedUser();
     await addDoc(
       collection(this.firestore, 'users', user.uid, 'restaurants', restaurant.id, 'dishes'),
-      this.toFirestoreDish(restaurant, payload),
+      this.toFirestoreDishOnCreate(restaurant, payload),
     );
   }
 
@@ -265,16 +263,26 @@ export class OwnerService {
   }
 
   private toFirestoreDish(restaurant: Restaurant, payload: DishFormValue) {
+    const imageKey = getCategoryImageKey(payload.categoryId);
+
     return {
       name: payload.name.trim(),
       price: Number(payload.price),
-      rating: Number(payload.rating),
       categoryId: payload.categoryId,
-      imageKey: payload.imageKey,
-      imageUrl: getDishImageUrl(payload.imageKey),
+      imageKey,
+      imageUrl: getDishImageUrl(imageKey),
       restaurant: restaurant.name,
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
+    };
+  }
+
+  private toFirestoreDishOnCreate(restaurant: Restaurant, payload: DishFormValue) {
+    return {
+      ...this.toFirestoreDish(restaurant, payload),
+      rating: 0,
+      ratingCount: 0,
+      ratingTotal: 0,
     };
   }
 
@@ -302,8 +310,11 @@ export class OwnerService {
   }
 
   private mapDish(document: Record<string, unknown>, restaurantId: string): Dish {
+    const categoryId = String(document['categoryId'] ?? 'burgers');
     const imageKey =
-      typeof document['imageKey'] === 'string' ? document['imageKey'] : 'burger';
+      typeof document['imageKey'] === 'string'
+        ? document['imageKey']
+        : getCategoryImageKey(categoryId);
     const restaurantName = String(document['restaurantName'] ?? document['restaurant'] ?? '');
 
     return {
@@ -311,13 +322,22 @@ export class OwnerService {
       name: String(document['name'] ?? ''),
       price: Number(document['price'] ?? 0),
       rating: Number(document['rating'] ?? 0),
+      ratingCount: Number(
+        document['ratingCount'] ??
+          (Number(document['rating'] ?? 0) > 0 ? 1 : 0),
+      ),
+      ratingTotal: Number(
+        document['ratingTotal'] ??
+          Number(document['rating'] ?? 0) *
+            Number(document['ratingCount'] ?? (Number(document['rating'] ?? 0) > 0 ? 1 : 0)),
+      ),
       restaurant: String(document['restaurant'] ?? restaurantName),
       restaurantId:
         typeof document['restaurantId'] === 'string'
           ? document['restaurantId']
           : restaurantId,
       restaurantName,
-      categoryId: String(document['categoryId'] ?? 'all'),
+      categoryId,
       imageKey,
       imageUrl:
         typeof document['imageUrl'] === 'string'

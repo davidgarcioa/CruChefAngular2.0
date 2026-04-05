@@ -5,80 +5,372 @@
     <header class="content-header fade-slide">
       <div class="header-copy">
         <p class="eyebrow">Vista de usuario</p>
-        <h1>Platos disponibles</h1>
+        <h1>{{ pageTitle() }}</h1>
         <p class="lead">
-          Estas viendo el menu de <span>{{ currentRestaurantLabel() }}</span>.
+          @if (currentView() === 'menu') {
+            Estas viendo el menu de <span>{{ currentRestaurantLabel() }}</span>.
+          } @else {
+            {{ pageLead() }}
+          }
         </p>
       </div>
     </header>
 
-    <section class="focus-panel section-block fade-slide delay-1">
-      <div class="focus-copy">
-        <p class="eyebrow">Restaurante actual</p>
-        <h2>{{ currentRestaurantLabel() }}</h2>
-        <p>
-          Cambia de restaurante para revisar que platos tiene disponibles antes de hacer tu
-          pedido.
-        </p>
-      </div>
+    @if (currentView() === 'menu') {
+      <section class="focus-panel section-block fade-slide delay-1">
+        <div class="focus-copy">
+          <p class="eyebrow">Restaurante actual</p>
+          <h2>{{ currentRestaurantLabel() }}</h2>
+          <p>
+            Solo veras restaurantes creados y guardados en Firebase. Cambia de restaurante para
+            revisar que platos tiene disponibles antes de hacer tu pedido.
+          </p>
+        </div>
 
-      <div class="restaurant-switcher">
-        @for (restaurant of restaurants(); track restaurant) {
-          <button
-            type="button"
-            class="restaurant-pill"
-            [class.is-active]="selectedRestaurant() === restaurant"
-            (click)="selectRestaurant(restaurant)"
-          >
-            {{ restaurant }}
-          </button>
+        @if (catalogError()) {
+          <div class="status-banner status-banner--error">
+            <p>{{ catalogError() }}</p>
+          </div>
+        } @else if (hasRestaurants()) {
+          <div class="restaurant-switcher">
+            @for (restaurant of restaurants(); track restaurant.id) {
+              <button
+                type="button"
+                class="restaurant-pill"
+                [class.is-active]="selectedRestaurantId() === getRestaurantKey(restaurant)"
+                (click)="selectRestaurant(getRestaurantKey(restaurant))"
+              >
+                {{ restaurant.name }}
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="status-banner">
+            <p>Aun no hay restaurantes creados en Firebase para mostrar en esta vista.</p>
+          </div>
         }
-      </div>
-    </section>
+      </section>
 
-    <section class="section-block fade-slide delay-2">
-      <div class="section-heading">
-        <div>
-          <h2>Categorias</h2>
-          <p>
-            <span>{{ filteredDishes().length }}</span> platos visibles en
-            {{ currentRestaurantLabel() }}.
-          </p>
+      <section class="section-block fade-slide delay-2">
+        <div class="section-heading">
+          <div>
+            <h2>Categorias</h2>
+            <p>
+              <span>{{ filteredDishes().length }}</span> platos visibles en
+              {{ currentRestaurantLabel() }}.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <app-category-slider
-        [categories]="categories"
-        [selectedCategoryId]="selectedCategoryId()"
-        (categoryChange)="selectedCategoryId.set($event)"
-      />
-    </section>
+        @if (hasRestaurants()) {
+          <app-category-slider
+            [categories]="categories"
+            [selectedCategoryId]="selectedCategoryId()"
+            (categoryChange)="selectedCategoryId.set($event)"
+          />
+        } @else {
+          <div class="status-banner">
+            <p>La vista de usuario se activara cuando existan restaurantes creados en Firebase.</p>
+          </div>
+        }
+      </section>
 
-    <section class="catalog-panel section-block fade-slide delay-3">
-      <div class="section-heading section-heading--stacked">
-        <div>
-          <h2>Menu del restaurante</h2>
-          <p>
-            <span>{{ filteredDishes().length }}</span> platos disponibles en esta vista.
-          </p>
-        </div>
-      </div>
+      <section class="menu-layout section-block fade-slide delay-3">
+        <section class="catalog-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Menu del restaurante</h2>
+              <p>
+                <span>{{ filteredDishes().length }}</span> platos disponibles en esta vista.
+              </p>
+            </div>
+          </div>
 
-      @if (filteredDishes().length > 0) {
-        <div class="dish-row">
-          @for (dish of filteredDishes(); track dish.id; let index = $index) {
-            <div class="dish-item">
-              <app-dish-card [dish]="dish" [animationDelay]="index" />
+          @if (!hasRestaurants()) {
+            <div class="empty-state">
+              <p class="eyebrow">Sin restaurantes</p>
+              <h3>Todavia no hay restaurantes guardados en Firebase.</h3>
+              <p>
+                Cuando un propietario cree su restaurante, aparecera automaticamente en esta vista.
+              </p>
+            </div>
+          } @else if (filteredDishes().length > 0) {
+            <div class="dish-row">
+              @for (dish of filteredDishes(); track dish.id; let index = $index) {
+                <div class="dish-item">
+                  <app-dish-card [dish]="dish" [animationDelay]="index" />
+                  <button type="button" class="action-button" (click)="openOrderComposer(dish)">
+                    Pedir ahora
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <p class="eyebrow">Sin platos</p>
+              <h3>No hay platos disponibles para esta combinacion.</h3>
+              <p>
+                Cambia la categoria o el restaurante para revisar otras opciones guardadas en
+                Firebase.
+              </p>
             </div>
           }
+        </section>
+
+        <aside class="order-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Hacer pedido</h2>
+              <p>
+                <span>{{ activeOrders().length }}</span> pedidos activos actualmente en tu cuenta.
+              </p>
+            </div>
+          </div>
+
+          @if (orderSuccess()) {
+            <p class="status-banner status-banner--success">{{ orderSuccess() }}</p>
+          }
+
+          @if (orderActionError()) {
+            <p class="status-banner status-banner--error">{{ orderActionError() }}</p>
+          }
+
+          @if (selectedDish()) {
+            <div class="order-dish-preview">
+              <img [src]="selectedDish()!.imageUrl" [alt]="selectedDish()!.name" />
+              <div>
+                <p class="eyebrow">Plato seleccionado</p>
+                <h3>{{ selectedDish()!.name }}</h3>
+                <p>{{ selectedDishCategoryName() }}</p>
+                <p class="order-dish-price">
+                  {{ selectedDish()!.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                </p>
+              </div>
+            </div>
+
+            <form class="order-form" [formGroup]="orderForm" (ngSubmit)="submitOrder()">
+              <label class="field">
+                <span>Cantidad</span>
+                <input type="number" formControlName="quantity" min="1" max="10" />
+              </label>
+
+              <label class="field">
+                <span>Indicaciones</span>
+                <textarea
+                  formControlName="notes"
+                  rows="4"
+                  placeholder="Sin cebolla, sin picante, entrega en porteria..."
+                ></textarea>
+              </label>
+
+              <button type="submit" class="action-button action-button--primary" [disabled]="isSubmittingOrder()">
+                {{ isSubmittingOrder() ? 'Enviando pedido...' : 'Confirmar pedido' }}
+              </button>
+            </form>
+          } @else {
+            <div class="empty-state empty-state--compact">
+              <p class="eyebrow">Pedido</p>
+              <h3>Selecciona un plato</h3>
+              <p>
+                Pulsa <strong>Pedir ahora</strong> en cualquier plato para escoger cantidad y
+                enviar el pedido al propietario.
+              </p>
+            </div>
+          }
+        </aside>
+      </section>
+    } @else if (currentView() === 'orders') {
+      <section class="section-block fade-slide delay-1">
+        <div class="section-heading">
+          <div>
+            <h2>Pedidos activos</h2>
+            <p>
+              <span>{{ activeOrders().length }}</span> pedidos en proceso con los propietarios.
+            </p>
+          </div>
         </div>
-      } @else {
-        <div class="empty-state">
-          <p class="eyebrow">Sin platos</p>
-          <h3>No hay platos disponibles para esta combinacion.</h3>
-          <p>Cambia la categoria o el restaurante para revisar otras opciones del catalogo.</p>
-        </div>
-      }
-    </section>
+
+        @if (ordersError()) {
+          <div class="status-banner status-banner--error">
+            <p>{{ ordersError() }}</p>
+          </div>
+        } @else if (activeOrders().length > 0) {
+          <div class="order-list">
+            @for (order of activeOrders(); track order.id) {
+              <article class="order-card">
+                <div class="order-card__top">
+                  <div>
+                    <p class="eyebrow">{{ order.restaurantName }}</p>
+                    <h3>{{ order.dishName }}</h3>
+                    <p class="order-meta">
+                      {{ order.quantity }} x
+                      {{ order.unitPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </p>
+                  </div>
+
+                  <span [class]="getOrderStatusClass(order.status)">
+                    {{ getOrderStatusLabel(order.status) }}
+                  </span>
+                </div>
+
+                <div class="order-card__body">
+                  <img [src]="order.dishImageUrl" [alt]="order.dishName" />
+                  <div>
+                    <p class="order-total">
+                      Total:
+                      {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </p>
+                    <p>Pedido creado: {{ order.createdAtMs | date: 'short' }}</p>
+                    @if (order.notes) {
+                      <p>Indicaciones: {{ order.notes }}</p>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <p class="eyebrow">Sin pedidos</p>
+            <h3>No tienes pedidos activos.</h3>
+            <p>Cuando envíes un pedido desde el menu, aparecera aqui con su estado actual.</p>
+          </div>
+        }
+      </section>
+    } @else {
+      <section class="history-layout section-block fade-slide delay-1">
+        <section class="catalog-panel">
+          <div class="section-heading">
+            <div>
+              <h2>Historial</h2>
+              <p>
+                <span>{{ historicalOrders().length }}</span> pedidos finalizados en tu cuenta.
+              </p>
+            </div>
+          </div>
+
+          @if (ordersError()) {
+            <div class="status-banner status-banner--error">
+              <p>{{ ordersError() }}</p>
+            </div>
+          } @else if (historicalOrders().length > 0) {
+            <div class="order-list">
+              @for (order of historicalOrders(); track order.id) {
+                <article class="order-card">
+                  <div class="order-card__top">
+                    <div>
+                      <p class="eyebrow">{{ order.restaurantName }}</p>
+                      <h3>{{ order.dishName }}</h3>
+                      <p class="order-meta">Pedido: {{ order.createdAtMs | date: 'short' }}</p>
+                    </div>
+
+                    <span [class]="getOrderStatusClass(order.status)">
+                      {{ getOrderStatusLabel(order.status) }}
+                    </span>
+                  </div>
+
+                  <div class="order-card__body">
+                    <img [src]="order.dishImageUrl" [alt]="order.dishName" />
+                    <div>
+                      <p class="order-total">
+                        Total:
+                        {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                      </p>
+                      @if (order.deliveredAtMs) {
+                        <p>Entregado: {{ order.deliveredAtMs | date: 'short' }}</p>
+                      }
+                      @if (order.notes) {
+                        <p>Indicaciones: {{ order.notes }}</p>
+                      }
+                      @if (order.rating != null) {
+                        <p>Tu calificacion: {{ order.rating }}/5</p>
+                        @if (order.reviewText) {
+                          <p>Comentario: {{ order.reviewText }}</p>
+                        }
+                      } @else if (canRateOrder(order)) {
+                        <button type="button" class="action-button" (click)="beginRating(order)">
+                          Calificar pedido
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <p class="eyebrow">Sin historial</p>
+              <h3>Aun no tienes pedidos finalizados.</h3>
+              <p>Los pedidos entregados o cancelados apareceran en esta seccion.</p>
+            </div>
+          }
+        </section>
+
+        <aside class="order-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Calificar pedido</h2>
+              <p>
+                <span>{{ pendingRatingsCount() }}</span>
+                pedidos entregados pendientes por calificar.
+              </p>
+            </div>
+          </div>
+
+          @if (ratingSuccess()) {
+            <p class="status-banner status-banner--success">{{ ratingSuccess() }}</p>
+          }
+
+          @if (ratingError()) {
+            <p class="status-banner status-banner--error">{{ ratingError() }}</p>
+          }
+
+          @if (selectedRatingOrder()) {
+            <div class="order-dish-preview">
+              <img [src]="selectedRatingOrder()!.dishImageUrl" [alt]="selectedRatingOrder()!.dishName" />
+              <div>
+                <p class="eyebrow">Pedido entregado</p>
+                <h3>{{ selectedRatingOrder()!.dishName }}</h3>
+                <p>{{ selectedRatingOrder()!.restaurantName }}</p>
+              </div>
+            </div>
+
+            <form class="order-form" [formGroup]="ratingForm" (ngSubmit)="submitRating()">
+              <label class="field">
+                <span>Calificacion</span>
+                <input type="number" formControlName="rating" min="1" max="5" />
+              </label>
+
+              <label class="field">
+                <span>Comentario</span>
+                <textarea
+                  formControlName="reviewText"
+                  rows="4"
+                  placeholder="Como te fue con la comida y el servicio?"
+                ></textarea>
+              </label>
+
+              <div class="action-row">
+                <button type="submit" class="action-button action-button--primary" [disabled]="isSubmittingRating()">
+                  {{ isSubmittingRating() ? 'Guardando...' : 'Enviar calificacion' }}
+                </button>
+                <button type="button" class="action-button action-button--ghost" (click)="cancelRating()">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          } @else {
+            <div class="empty-state empty-state--compact">
+              <p class="eyebrow">Calificacion</p>
+              <h3>Selecciona un pedido entregado</h3>
+              <p>
+                Cuando pulses <strong>Calificar pedido</strong> en tu historial, podras dejar las
+                estrellas y el comentario para ese plato.
+              </p>
+            </div>
+          }
+        </aside>
+      </section>
+    }
   </section>
 </main>
