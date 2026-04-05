@@ -4,6 +4,8 @@ export interface Dish {
   price: number;
   rating: number;
   restaurant: string;
+  restaurantId: string;
+  restaurantName: string;
   imageUrl: string;
   imageKey: string;
   categoryId: string;

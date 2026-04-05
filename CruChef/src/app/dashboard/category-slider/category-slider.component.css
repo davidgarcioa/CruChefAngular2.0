@@ -6,14 +6,10 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 1.1rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scrollbar-width: none;
-}
-
-.categories::-webkit-scrollbar {
-  display: none;
+  overflow: visible;
+  padding-bottom: 0.2rem;
 }
 
 .category-chip {

@@ -88,6 +88,14 @@
   cursor: wait;
 }
 
+.status-message {
+  margin: 1rem 0 0;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(230, 81, 81, 0.12);
+  color: #ffb0b0;
+}
+
 @media (max-width: 720px) {
   .role-grid {
     grid-template-columns: 1fr;

@@ -1,10 +1,10 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { AuthService } from '../auth.service';
 import { AuthShellComponent } from '../auth-shell/auth-shell.component';
+import { AuthService } from '../auth.service';
 import { RoleService } from '../role.service';
 
 @Component({

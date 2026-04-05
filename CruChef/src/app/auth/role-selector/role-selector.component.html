@@ -35,5 +35,9 @@
         <p>Administra platos, categorias y cambios del catalogo desde el panel principal.</p>
       </button>
     </div>
+
+    @if (errorMessage()) {
+      <p class="status-message">{{ errorMessage() }}</p>
+    }
   </section>
 </app-auth-shell>

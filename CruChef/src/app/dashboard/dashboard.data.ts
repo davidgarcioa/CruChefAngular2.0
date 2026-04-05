@@ -1,4 +1,4 @@
-﻿import { Category } from '../models/category.model';
+import { Category } from '../models/category.model';
 import { Dish } from '../models/dish.model';
 
 export interface NavigationItem {
@@ -112,6 +112,8 @@ export const defaultDishes: Dish[] = [
     price: 24000,
     rating: 5,
     restaurant: "Restaurante Ivon's",
+    restaurantId: 'demo-restaurant-1',
+    restaurantName: "Restaurante Ivon's",
     imageKey: 'burger',
     imageUrl: getDishImageUrl('burger'),
     categoryId: 'burgers',
@@ -122,6 +124,8 @@ export const defaultDishes: Dish[] = [
     price: 24000,
     rating: 5,
     restaurant: "Restaurante Ivon's",
+    restaurantId: 'demo-restaurant-1',
+    restaurantName: "Restaurante Ivon's",
     imageKey: 'pizza',
     imageUrl: getDishImageUrl('pizza'),
     categoryId: 'pizza',
@@ -132,6 +136,8 @@ export const defaultDishes: Dish[] = [
     price: 24000,
     rating: 4,
     restaurant: "Restaurante Ivon's",
+    restaurantId: 'demo-restaurant-1',
+    restaurantName: "Restaurante Ivon's",
     imageKey: 'sushi',
     imageUrl: getDishImageUrl('sushi'),
     categoryId: 'combo',
@@ -142,6 +148,8 @@ export const defaultDishes: Dish[] = [
     price: 24000,
     rating: 4,
     restaurant: 'Pasteleria CruChef',
+    restaurantId: 'demo-restaurant-2',
+    restaurantName: 'Pasteleria CruChef',
     imageKey: 'dessert',
     imageUrl: getDishImageUrl('dessert'),
     categoryId: 'desserts',
@@ -152,8 +160,12 @@ export const defaultDishes: Dish[] = [
     price: 22000,
     rating: 5,
     restaurant: 'Taqueria Central',
+    restaurantId: 'demo-restaurant-3',
+    restaurantName: 'Taqueria Central',
     imageKey: 'tacos',
     imageUrl: getDishImageUrl('tacos'),
     categoryId: 'tacos',
   },
 ];
+
+export const emptyDishes: Dish[] = [];

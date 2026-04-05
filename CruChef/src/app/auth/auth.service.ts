@@ -33,6 +33,8 @@ export interface AuthResult {
   profileSaved: boolean;
 }
 
+export type UserRole = 'owner' | 'user';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -146,6 +148,28 @@ export class AuthService {
 
   async logout(): Promise<void> {
     await signOut(this.auth);
+  }
+
+  async requireVerifiedUser(): Promise<User> {
+    const user = await this.getVerifiedUser();
+
+    if (!user) {
+      throw new Error('auth/user-not-found');
+    }
+
+    return user;
+  }
+
+  async setSelectedRole(role: UserRole): Promise<void> {
+    const user = await this.requireVerifiedUser();
+
+    await this.saveUserProfile(user.uid, {
+      uid: user.uid,
+      email: user.email,
+      fullName: user.displayName ?? '',
+      selectedRole: role,
+      roleUpdatedAt: serverTimestamp(),
+    });
   }
 
   async getVerifiedUser(): Promise<User | null> {

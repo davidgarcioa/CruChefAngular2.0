@@ -5,11 +5,7 @@ import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, switc
 
 import { environment } from '../environment';
 import { Dish } from '../models/dish.model';
-import {
-  defaultDishes,
-  dishImageOptions,
-  getDishImageUrl,
-} from './dashboard.data';
+import { defaultDishes, dishImageOptions, getDishImageUrl } from './dashboard.data';
 
 export interface DishFormValue {
   name: string;
@@ -121,13 +117,16 @@ export class DishService {
   private mapDish(document: Record<string, unknown>): Dish {
     const imageKey =
       typeof document['imageKey'] === 'string' ? document['imageKey'] : 'burger';
+    const restaurantName = String(document['restaurantName'] ?? document['restaurant'] ?? '');
 
     return {
       id: String(document['id'] ?? ''),
       name: String(document['name'] ?? ''),
       price: Number(document['price'] ?? 0),
       rating: Number(document['rating'] ?? 0),
-      restaurant: String(document['restaurant'] ?? ''),
+      restaurant: String(document['restaurant'] ?? restaurantName),
+      restaurantId: String(document['restaurantId'] ?? ''),
+      restaurantName,
       categoryId: String(document['categoryId'] ?? 'all'),
       imageKey,
       imageUrl:
