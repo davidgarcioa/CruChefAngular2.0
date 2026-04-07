@@ -42,7 +42,7 @@ pip install -r requirements.txt
 ### Paso 5: Configurar variables de entorno
 Crear archivo `.env` en `Backend/` con:
 ```env
-OPENAI_API_KEY=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
+OPENAI_API_KEY=tu_openai_api_key_aqui
 ```
 
 ### Paso 6: Ejecutar el servidor

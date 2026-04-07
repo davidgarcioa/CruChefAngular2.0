@@ -59,9 +59,9 @@ REM Crear archivo .env
 if not exist .env (
     echo 🔐 Creando archivo .env...
     (
-        echo OPENAI_API_KEY=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
+        echo OPENAI_API_KEY=tu_openai_api_key_aqui
     ) > .env
-    echo ✅ Archivo .env creado
+    echo ✅ Archivo .env creado (actualiza con tu clave real)
 )
 echo.
 

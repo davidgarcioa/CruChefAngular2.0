@@ -24,7 +24,9 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:4200", "http://localhost:4300", "*"]}})
 
 # Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY", "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")
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    logger.error("❌ OPENAI_API_KEY no configurada. Configura tu clave en el archivo .env")
 
 # Inicializar Firebase
 try:
