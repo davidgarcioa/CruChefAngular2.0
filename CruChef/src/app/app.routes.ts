@@ -62,5 +62,11 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { view: 'history', role: 'owner' },
   },
+  {
+    path: 'ai',
+    component: DashboardComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { view: 'ai', role: 'owner' },
+  },
   { path: '**', redirectTo: 'login' },
 ];

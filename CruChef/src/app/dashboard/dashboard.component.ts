@@ -15,6 +15,7 @@ import {
 } from '../models/order.model';
 import { Dish } from '../models/dish.model';
 import { Restaurant } from '../models/restaurant.model';
+import { AiVoiceAssistantComponent } from './ai-voice-assistant/ai-voice-assistant.component';
 import { CategorySliderComponent } from './category-slider/category-slider.component';
 import { categories, getCategoryImageUrl, ownerNavigationItems } from './dashboard.data';
 import { DishCardComponent } from './dish-card/dish-card.component';
@@ -32,6 +33,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
     SearchBarComponent,
     CategorySliderComponent,
     DishCardComponent,
+    AiVoiceAssistantComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
@@ -202,7 +204,9 @@ export class DashboardComponent {
         ? 'Dashboard'
         : currentView === 'orders'
           ? 'Ordenes'
-          : 'Historial';
+          : currentView === 'ai'
+            ? 'Asistente IA'
+            : 'Historial';
   });
 
   constructor() {
