@@ -1,24 +1,13 @@
-import { isPlatformBrowser } from '@angular/common';
+﻿import { isPlatformBrowser } from '@angular/common';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
-import { FirebaseError } from 'firebase/app';
-import {
-  Firestore,
-  Timestamp,
-  collection,
-  doc,
-  getFirestore,
-  onSnapshot,
-  runTransaction,
-  serverTimestamp,
-  writeBatch,
-} from 'firebase/firestore';
-import { Observable, from, of, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
-import { FirebaseService } from '../firebase.service';
 import { Dish } from '../models/dish.model';
 import { Order, OrderStatus } from '../models/order.model';
 import { Restaurant } from '../models/restaurant.model';
+import { environment } from '../environment';
 
 export interface CreateOrderPayload {
   quantity: number;
@@ -34,93 +23,60 @@ export interface OrderRatingPayload {
   providedIn: 'root',
 })
 export class OrderService {
-  private readonly firebaseService = inject(FirebaseService);
+  private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
-  private firestoreInstance: Firestore | null = null;
-
-  private get firestore(): Firestore {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
-      throw new Error('Firestore no esta disponible en este entorno.');
-    }
-
-    if (!this.firestoreInstance) {
-      this.firestoreInstance = getFirestore(this.firebaseService.app);
-    }
-
-    return this.firestoreInstance;
-  }
+  private readonly refreshOrders$ = new BehaviorSubject<void>(undefined);
 
   getUserOrders(): Observable<Order[]> {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
+    if (!isPlatformBrowser(this.platformId)) {
       return of([]);
     }
 
-    return from(this.authService.requireVerifiedUser()).pipe(
-      switchMap((user) => {
-        const ordersRef = collection(this.firestore, 'users', user.uid, 'orders');
-
-        return new Observable<Order[]>((subscriber) => {
-          const unsubscribe = onSnapshot(
-            ordersRef,
-            (snapshot) => {
-              subscriber.next(
-                snapshot.docs
-                  .map((document) => this.mapOrder(document.id, document.data()))
-                  .sort((left, right) => right.createdAtMs - left.createdAtMs),
-              );
-            },
-            (error) => subscriber.error(error),
-          );
-
-          return unsubscribe;
-        });
+    return this.refreshOrders$.pipe(
+      switchMap(async () => {
+        const user = await this.authService.requireVerifiedUser();
+        return user.uid;
       }),
+      switchMap((customerUid) =>
+        this.http
+          .get<Record<string, unknown>[]>(`${this.apiUrl}?customerUid=${encodeURIComponent(customerUid)}`)
+          .pipe(
+            map((orders) => orders.map((order) => this.mapOrder(order))),
+            catchError((error) => {
+              console.error('No se pudieron cargar las ordenes del usuario desde el backend.', error);
+              return of([]);
+            }),
+          ),
+      ),
     );
   }
 
   getOwnerOrders(restaurants: Restaurant[]): Observable<Order[]> {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app || restaurants.length === 0) {
+    if (!isPlatformBrowser(this.platformId) || restaurants.length === 0) {
       return of([]);
     }
 
-    return from(this.authService.requireVerifiedUser()).pipe(
-      switchMap((user) => {
-        return new Observable<Order[]>((subscriber) => {
-          const ordersByRestaurant = new Map<string, Order[]>();
-          const unsubscribers = restaurants.map((restaurant) => {
-            const ordersRef = collection(
-              this.firestore,
-              'users',
-              user.uid,
-              'restaurants',
-              restaurant.id,
-              'orders',
-            );
+    const ownerUid = restaurants[0]?.ownerUid ?? '';
+    if (!ownerUid) {
+      return of([]);
+    }
 
-            return onSnapshot(
-              ordersRef,
-              (snapshot) => {
-                ordersByRestaurant.set(
-                  restaurant.id,
-                  snapshot.docs.map((document) => this.mapOrder(document.id, document.data())),
-                );
-
-                subscriber.next(
-                  Array.from(ordersByRestaurant.values())
-                    .flat()
-                    .sort((left, right) => right.createdAtMs - left.createdAtMs),
-                );
-              },
-              (error) => subscriber.error(error),
-            );
-          });
-
-          return () => {
-            unsubscribers.forEach((unsubscribe) => unsubscribe());
-          };
-        });
-      }),
+    return this.refreshOrders$.pipe(
+      switchMap(() =>
+        this.http
+          .get<Record<string, unknown>[]>(`${this.apiUrl}?ownerUid=${encodeURIComponent(ownerUid)}`)
+          .pipe(
+            map((orders) => orders.map((order) => this.mapOrder(order))),
+            map((orders) =>
+              orders.filter((order) => restaurants.some((restaurant) => restaurant.id === order.restaurantId)),
+            ),
+            catchError((error) => {
+              console.error('No se pudieron cargar las ordenes del propietario desde el backend.', error);
+              return of([]);
+            }),
+          ),
+      ),
     );
   }
 
@@ -129,178 +85,98 @@ export class OrderService {
     dish: Dish,
     payload: CreateOrderPayload,
   ): Promise<void> {
+    this.ensureBrowser();
     const user = await this.authService.requireVerifiedUser();
-    const canonicalRef = doc(
-      collection(
-        this.firestore,
-        'users',
-        restaurant.ownerUid,
-        'restaurants',
-        restaurant.id,
-        'orders',
-      ),
+
+    await firstValueFrom(
+      this.http.post(this.apiUrl, {
+        ownerUid: restaurant.ownerUid,
+        restaurantId: restaurant.id,
+        restaurantName: restaurant.name,
+        customerUid: user.uid,
+        customerEmail: user.email ?? '',
+        customerName: user.displayName ?? user.email ?? 'Usuario CruChef',
+        dishId: dish.id,
+        dishName: dish.name,
+        dishImageUrl: dish.imageUrl,
+        categoryId: dish.categoryId,
+        quantity: Number(payload.quantity),
+        unitPrice: Number(dish.price),
+        notes: payload.notes.trim(),
+      }),
     );
-    const customerMirrorRef = doc(this.firestore, 'users', user.uid, 'orders', canonicalRef.id);
 
-    const orderPayload = {
-      ownerUid: restaurant.ownerUid,
-      restaurantId: restaurant.id,
-      restaurantName: restaurant.name,
-      customerUid: user.uid,
-      customerEmail: user.email ?? '',
-      customerName: user.displayName ?? user.email ?? 'Usuario CruChef',
-      dishId: dish.id,
-      dishName: dish.name,
-      dishImageUrl: dish.imageUrl,
-      categoryId: dish.categoryId,
-      quantity: Number(payload.quantity),
-      unitPrice: Number(dish.price),
-      totalPrice: Number(dish.price) * Number(payload.quantity),
-      notes: payload.notes.trim(),
-      status: 'pending',
-      rating: null,
-      reviewText: '',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      deliveredAt: null,
-    };
-
-    const batch = writeBatch(this.firestore);
-    batch.set(canonicalRef, orderPayload);
-    batch.set(customerMirrorRef, orderPayload);
-    await batch.commit();
+    this.refreshOrders$.next();
   }
 
   async updateOrderStatus(order: Order, status: OrderStatus): Promise<void> {
-    const user = await this.authService.requireVerifiedUser();
+    this.ensureBrowser();
 
-    if (user.uid !== order.ownerUid) {
-      throw new Error('permission-denied');
-    }
+    await firstValueFrom(
+      this.http.patch(`${this.apiUrl}/${order.id}/status`, {
+        status,
+      }),
+    );
 
-    const refs = this.getOrderRefs(order);
-    const patch = {
-      status,
-      updatedAt: serverTimestamp(),
-      deliveredAt: status === 'delivered' ? serverTimestamp() : null,
-    };
-
-    const batch = writeBatch(this.firestore);
-    batch.update(refs.canonicalRef, patch);
-    batch.update(refs.customerMirrorRef, patch);
-    await batch.commit();
+    this.refreshOrders$.next();
   }
 
   async rateOrder(order: Order, payload: OrderRatingPayload): Promise<void> {
-    const user = await this.authService.requireVerifiedUser();
+    this.ensureBrowser();
 
-    if (user.uid !== order.customerUid) {
-      throw new Error('permission-denied');
-    }
-
-    await runTransaction(this.firestore, async (transaction) => {
-      const refs = this.getOrderRefs(order);
-      const dishRef = doc(
-        this.firestore,
-        'users',
-        order.ownerUid,
-        'restaurants',
-        order.restaurantId,
-        'dishes',
-        order.dishId,
-      );
-
-      const orderSnapshot = await transaction.get(refs.canonicalRef);
-      const dishSnapshot = await transaction.get(dishRef);
-
-      if (!orderSnapshot.exists()) {
-        throw new Error('order-not-found');
-      }
-
-      const orderData = orderSnapshot.data();
-      const currentStatus = String(orderData['status'] ?? 'pending') as OrderStatus;
-      const currentCustomerUid = String(orderData['customerUid'] ?? '');
-      const existingRating =
-        typeof orderData['rating'] === 'number' ? Number(orderData['rating']) : null;
-
-      if (currentCustomerUid !== user.uid) {
-        throw new Error('permission-denied');
-      }
-
-      if (currentStatus !== 'delivered') {
-        throw new Error('order-not-delivered');
-      }
-
-      if (existingRating != null) {
-        throw new Error('order-already-rated');
-      }
-
-      const dishData = dishSnapshot.exists() ? dishSnapshot.data() : {};
-      const currentRatingCount = Number(dishData['ratingCount'] ?? 0);
-      const currentRatingTotal =
-        Number(dishData['ratingTotal'] ?? Number(dishData['rating'] ?? 0) * currentRatingCount);
-      const nextRatingCount = currentRatingCount + 1;
-      const nextRatingTotal = currentRatingTotal + Number(payload.rating);
-      const nextRating = Number((nextRatingTotal / nextRatingCount).toFixed(1));
-      const ratingPatch = {
+    await firstValueFrom(
+      this.http.patch(`${this.apiUrl}/${order.id}/rating`, {
         rating: Number(payload.rating),
         reviewText: payload.reviewText.trim(),
-        updatedAt: serverTimestamp(),
-      };
+      }),
+    );
 
-      transaction.update(refs.canonicalRef, ratingPatch);
-      transaction.update(refs.customerMirrorRef, ratingPatch);
-
-      if (dishSnapshot.exists()) {
-        transaction.update(dishRef, {
-          rating: nextRating,
-          ratingCount: nextRatingCount,
-          ratingTotal: nextRatingTotal,
-        });
-      }
-    });
+    this.refreshOrders$.next();
   }
 
   getErrorMessage(error: unknown): string {
-    const code = this.getErrorCode(error);
+    if (error instanceof HttpErrorResponse) {
+      const message = typeof error.error?.message === 'string' ? error.error.message : '';
 
-    switch (code) {
-      case 'permission-denied':
-        return 'Firestore rechazo la operacion. Revisa las reglas de orders y dishes.';
-      case 'failed-precondition':
-        return 'Firestore requiere configuracion adicional para pedidos.';
-      case 'order-not-found':
-        return 'No se encontro el pedido seleccionado.';
-      case 'order-not-delivered':
-        return 'Solo puedes calificar pedidos entregados.';
-      case 'order-already-rated':
-        return 'Este pedido ya fue calificado.';
-      case 'unavailable':
-      case 'auth/network-request-failed':
-        return 'No se pudo conectar con Firebase.';
-      default:
-        return 'No se pudo completar la operacion del pedido.';
+      if (error.status === 0) {
+        return 'No se pudo conectar con el backend de ordenes. Verifica que Backend este corriendo en http://localhost:3000.';
+      }
+
+      if (error.status === 404) {
+        return message || 'La orden no existe.';
+      }
+
+      if (error.status === 400) {
+        return message || 'Los datos de la orden no son validos.';
+      }
+
+      if (error.status >= 500) {
+        return message || 'El backend no pudo procesar la orden.';
+      }
+
+      return message || 'No se pudo completar la operacion del pedido.';
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'No se pudo completar la operacion del pedido.';
+  }
+
+  private get apiUrl(): string {
+    return `${environment.apiBaseUrl}/orders`;
+  }
+
+  private ensureBrowser(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      throw new Error('Las ordenes solo se pueden administrar desde el navegador.');
     }
   }
 
-  private getOrderRefs(order: Order) {
+  private mapOrder(document: Record<string, unknown>): Order {
     return {
-      canonicalRef: doc(
-        this.firestore,
-        'users',
-        order.ownerUid,
-        'restaurants',
-        order.restaurantId,
-        'orders',
-        order.id,
-      ),
-      customerMirrorRef: doc(this.firestore, 'users', order.customerUid, 'orders', order.id),
-    };
-  }
-
-  private mapOrder(id: string, document: Record<string, unknown>): Order {
-    return {
-      id,
+      id: String(document['id'] ?? ''),
       ownerUid: String(document['ownerUid'] ?? ''),
       restaurantId: String(document['restaurantId'] ?? ''),
       restaurantName: String(document['restaurantName'] ?? ''),
@@ -338,12 +214,17 @@ export class OrderService {
   }
 
   private toMillis(value: unknown): number {
-    if (value instanceof Timestamp) {
-      return value.toMillis();
-    }
+    if (typeof value === 'object' && value !== null) {
+      const maybeSeconds = (value as { seconds?: unknown; _seconds?: unknown }).seconds;
+      const legacySeconds = (value as { seconds?: unknown; _seconds?: unknown })._seconds;
 
-    if (typeof value === 'object' && value !== null && 'seconds' in value) {
-      return Number((value as { seconds: number }).seconds) * 1000;
+      if (typeof maybeSeconds === 'number') {
+        return maybeSeconds * 1000;
+      }
+
+      if (typeof legacySeconds === 'number') {
+        return legacySeconds * 1000;
+      }
     }
 
     return 0;
@@ -356,26 +237,4 @@ export class OrderService {
 
     return this.toMillis(value);
   }
-
-  private getErrorCode(error: unknown): string {
-    if (error instanceof FirebaseError) {
-      return error.code;
-    }
-
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      typeof (error as { code: unknown }).code === 'string'
-    ) {
-      return (error as { code: string }).code;
-    }
-
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return '';
-  }
 }
-
