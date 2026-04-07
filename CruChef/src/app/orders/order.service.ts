@@ -1,4 +1,4 @@
-﻿import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
@@ -143,7 +143,11 @@ export class OrderService {
       }
 
       if (error.status === 404) {
-        return message || 'La orden no existe.';
+        if (typeof error.url === 'string' && (error.url.endsWith('/status') || error.url.endsWith('/rating'))) {
+          return message || 'La orden no existe.';
+        }
+
+        return message || 'La ruta de ordenes no esta disponible en el backend.';
       }
 
       if (error.status === 400) {
@@ -238,3 +242,5 @@ export class OrderService {
     return this.toMillis(value);
   }
 }
+
+
