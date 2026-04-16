@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject } from 'rxjs';
 
 declare global {
   interface Window {
@@ -40,6 +40,9 @@ export class AiVoiceAssistantService {
   error = signal('');
   confidence = signal(0);
   isSupported = signal(this.checkSupport());
+
+  // Evento que se dispara cuando termina la grabación
+  recognitionEnded$ = new Subject<void>();
 
   constructor(private http: HttpClient) {
     console.log('[Voice] Service initialized');
@@ -103,7 +106,12 @@ export class AiVoiceAssistantService {
 
     this.recognition.onend = () => {
       console.log('[Voice] Recognition ended');
+      console.log('[Voice] Final transcript:', this.transcript());
       this.isListening.set(false);
+      
+      // Dispara el evento para que el componente sepa que termino
+      console.log('[Voice] Emitiendo recognitionEnded$ event');
+      this.recognitionEnded$.next();
     };
   }
 

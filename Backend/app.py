@@ -65,99 +65,75 @@ def transcribe_audio(audio_bytes):
         raise
 
 def extract_dish_info(transcript):
-    """Extract dish data using Deepseek"""
+    """Extract dish data using Regex - simple and bulletproof"""
+    import re
+    
     try:
-        logger.info("🤖 Extrayendo datos con Deepseek...")
+        logger.info(f"🤖 Extrayendo datos... Transcript: '{transcript}'")
         
-        # Si el texto es muy corto o parece no ser un comando real, usar valores por defecto
-        if len(transcript.strip()) < 3 or transcript.lower().count(" ") < 1:
-            logger.warning(f"⚠️ Texto muy corto o inválido: '{transcript}'")
-            return {
-                "name": "Plato del Día",
-                "price": 24000,
-                "category": "burgers"
-            }
+        # Si el texto es muy corto, usar valores por defecto
+        if len(transcript.strip()) < 3:
+            logger.warning(f"⚠️ Texto muy corto: '{transcript}'")
+            return {"name": "Plato del Día", "price": 24000, "category": "burgers"}
         
-        categories_list = ", ".join(CATEGORIES.keys())
+        clean_text = transcript.strip().lower()
         
-        prompt = f"""Analiza este comando de voz en español y extrae la información para crear un plato:
-
-COMANDO: "{transcript}"
-
-Por favor, retorna SOLO un JSON válido (sin markdown, sin explicación) con:
-{{
-    "name": "nombre del plato",
-    "price": número entero en pesos,
-    "category": categoría de {categories_list}
-}}
-
-Si no puedes extraer el precio, usa 24000. Si la categoría no existe, usa 'burgers'.
-Asegúrate que el JSON sea válido y completo."""
-
-        response = openai.ChatCompletion.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": "Eres un asistente que extrae información de comandos de voz en español. Retorna SOLO JSON válido."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=200
-        )
+        # ===== EXTRAER PRECIO =====
+        price = 24000  # Default
         
-        response_text = response['choices'][0]['message']['content'].strip()
-        logger.info(f"Respuesta Deepseek: {response_text}")
-        
-        # Parse JSON
-        json_str = response_text
-        if "```json" in response_text:
-            json_str = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            json_str = response_text.split("```")[1].split("```")[0].strip()
-        
-        dish_data = json.loads(json_str)
-        
-        logger.info(f"📦 Datos sin validar de Deepseek: {dish_data}")
-        
-        # Validate and normalize
-        if not dish_data.get('name'):
-            logger.warning("⚠️ Name vacío, usando 'Plato del Día'")
-            dish_data['name'] = 'Plato del Día'
-        
-        # Normalizar categoría a minúsculas
-        category = str(dish_data.get('category', 'burgers')).lower().strip()
-        logger.info(f"🏷️ Categoría normalizada: '{category}'")
-        
-        if category not in CATEGORIES:
-            logger.warning(f"⚠️ Categoría inválida '{category}', usando 'burgers'")
-            dish_data['category'] = 'burgers'
+        # Buscar número seguido de "mil"
+        mil_match = re.search(r'(\d+)\s*mil', clean_text)
+        if mil_match:
+            price = int(mil_match.group(1)) * 1000
+            logger.info(f"✅ Encontrado: {price} (X mil)")
         else:
-            dish_data['category'] = category
-            logger.info(f"✅ Categoría válida: '{category}'")
+            # Buscar número directo (4-5 dígitos)
+            num_match = re.search(r'(\d{4,5})', clean_text)
+            if num_match:
+                price = int(num_match.group(1))
+                logger.info(f"✅ Encontrado: {price} (número directo)")
         
-        if not dish_data.get('price') or dish_data.get('price', 0) < 1000:
-            logger.warning(f"⚠️ Precio inválido {dish_data.get('price')}, usando 24000")
-            dish_data['price'] = 24000
-        else:
-            dish_data['price'] = int(dish_data.get('price'))
-            logger.info(f"✅ Precio válido: {dish_data['price']}")
+        # ===== EXTRAER NOMBRE =====
+        # El nombre es todo ANTES del primer número
+        name = "Plato del Día"  # Default
         
-        logger.info(f"✅ Datos finales extraídos: {dish_data}")
-        return dish_data
+        # Encontrar la posición del primer número
+        first_number = re.search(r'\d+', clean_text)
+        if first_number:
+            name_text = clean_text[:first_number.start()].strip()
+            # Remover palabras que no sean importantes
+            words = name_text.replace('nombre', '').replace('precio', '').replace(',', '').split()
+            words = [w.strip() for w in words if w.strip() and w not in ['de', 'el', 'la', 'los', 'las', 'y', 'o', 'a']]
+            
+            if words:
+                name = ' '.join(words).title()
+                logger.info(f"✅ Nombre extraído: '{name}'")
+            else:
+                logger.info(f"⚠️ No se pudo extraer nombre")
         
-    except json.JSONDecodeError as e:
-        logger.error(f"❌ Error parseando JSON: {e}")
-        return {
-            "name": "Plato del Día",
-            "price": 24000,
-            "category": "burgers"
+        # ===== EXTRAER CATEGORÍA =====
+        category = "burgers"  # Default siempre
+        
+        for cat_key in CATEGORIES.keys():
+            if cat_key in clean_text or CATEGORIES[cat_key].lower() in clean_text:
+                category = cat_key
+                logger.info(f"✅ Categoría encontrada: {category}")
+                break
+        
+        # Resultado final
+        result = {
+            "name": name,
+            "price": max(1000, price),  # Mínimo 1000
+            "category": category
         }
+        
+        logger.info(f"✅ RESULTADO FINAL: {result}")
+        return result
+        
     except Exception as e:
         logger.error(f"❌ Error extrayendo: {e}")
-        return {
-            "name": "Plato del Día",
-            "price": 24000,
-            "category": "burgers"
-        }
+        logger.exception("Stack trace:")
+        return {"name": "Plato del Día", "price": 24000, "category": "burgers"}
 
 def save_to_firebase(restaurant_id, dish_data):
     """Save dish to Firebase"""

@@ -62,6 +62,12 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadRestaurants();
 
+    // Escuchar el evento cuando termina la grabación
+    this.voiceService.recognitionEnded$.subscribe(() => {
+      console.log('[Component] 🔔 Se recibió evento recognitionEnded del servicio');
+      this.stopListening();
+    });
+
     if (this.isVoiceSupported()) {
       this.voiceService.speak('Sistema de voz con IA activado. Haz clic en iniciar grabación cuando estés listo.');
     }
