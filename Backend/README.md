@@ -3,10 +3,11 @@
 ## 📋 Descripción
 
 Servicio de IA que convierte voz a texto y crea platos automáticamente usando:
-- **OpenAI Whisper**: Transcripción de audio muy precisa
-- **GPT-4o mini**: Extracción inteligente de datos del plato
+- **Deepseek Chat**: Modelo de IA para extracción inteligente de datos
 - **Firebase**: Almacenamiento de platos creados
 - **FastAPI**: Backend Python de alto rendimiento
+
+⚠️ **Nota**: Para transcripción de audio, necesitarás una solución alternativa (como OpenAI Whisper o ASR localizada).
 
 ## 🚀 Instalación Rápida
 
@@ -42,7 +43,7 @@ pip install -r requirements.txt
 ### Paso 5: Configurar variables de entorno
 Crear archivo `.env` en `Backend/` con:
 ```env
-OPENAI_API_KEY=tu_openai_api_key_aqui
+DEEPSEEK_API_KEY=sk-b55730508d4f4f19b7c0ebeba0cc5679
 ```
 
 ### Paso 6: Ejecutar el servidor
@@ -66,7 +67,7 @@ Respuesta:
 ```json
 {
   "status": "healthy",
-  "openai_available": true,
+  "deepseek_available": true,
   "firebase_available": true,
   "timestamp": "2026-04-06T22:30:00"
 }
@@ -180,13 +181,13 @@ Angular (Frontend)                Backend Python
 
 | Variable | Descripción | Requerido |
 |----------|-------------|-----------|
-| OPENAI_API_KEY | Tu API Key de OpenAI | ✅ Sí |
+| DEEPSEEK_API_KEY | Tu API Key de Deepseek | ✅ Sí |
 
 ## 📦 Dependencias
 
 - **fastapi**: Framework web
 - **uvicorn**: ASGI server
-- **openai**: Cliente de OpenAI
+- **openai**: Cliente de OpenAI (compatible con Deepseek)
 - **firebase-admin**: SDK de Firebase
 - **python-multipart**: Para upload de archivos
 

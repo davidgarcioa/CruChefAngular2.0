@@ -23,10 +23,11 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:4200", "http://localhost:4300", "*"]}})
 
-# Configuración de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Configuración de Deepseek
+openai.api_key = os.getenv("DEEPSEEK_API_KEY")
+openai.api_base = "https://api.deepseek.com/v1"
 if not openai.api_key:
-    logger.error("❌ OPENAI_API_KEY no configurada. Configura tu clave en el archivo .env")
+    logger.error("❌ DEEPSEEK_API_KEY no configurada. Configura tu clave en el archivo .env")
 
 # Inicializar Firebase
 try:
@@ -59,7 +60,10 @@ CATEGORIES = {
 # Funciones auxiliares
 def transcribe_audio(audio_bytes: bytes) -> tuple[str, float]:
     """
-    Transcribe audio usando OpenAI Whisper
+    Transcribe audio usando OpenAI Whisper si está disponible
+    
+    NOTE: Deepseek no tiene servicio de transcripción de audio como Whisper.
+    Para transcripción de audio, usa Web Speech API del navegador.
     
     Args:
         audio_bytes: bytes del archivo de audio
@@ -68,34 +72,17 @@ def transcribe_audio(audio_bytes: bytes) -> tuple[str, float]:
         tuple: (texto transcrito, confianza estimada)
     """
     try:
-        logger.info("🎙️ Iniciando transcripción con Whisper...")
-        
-        # Crear objeto file para Whisper
-        audio_file = BytesIO(audio_bytes)
-        audio_file.name = "audio.wav"
-        
-        # Llamar a Whisper
-        transcript = openai.Audio.transcribe(
-            model="whisper-1",
-            file=audio_file,
-            language="es",  # Español
-            response_format="json"
-        )
-        
-        text = transcript.get('text', '').strip()
-        logger.info(f"✅ Transcripción exitosa: '{text}'")
-        
-        # Retornar texto y confianza estimada (Whisper no da score, asumimos 0.9)
-        return text, 0.9
+        logger.warning("⚠️ Audio transcription is not available in Deepseek API.")
+        raise Exception("Audio transcription not supported. Use /text-to-dish endpoint instead.")
         
     except Exception as e:
         logger.error(f"❌ Error transcribiendo: {e}")
-        raise HTTPException(status_code=500, detail=f"Error en transcripción: {str(e)}")
+        raise
 
 
 def extract_dish_info(transcript: str) -> dict:
     """
-    Extrae información de un plato del texto transcrito usando GPT
+    Extrae información de un plato del texto transcrito usando Deepseek
     
     Args:
         transcript: texto transcrito
@@ -104,7 +91,7 @@ def extract_dish_info(transcript: str) -> dict:
         dict con nombre, precio, categoría
     """
     try:
-        logger.info("🤖 Extrayendo información con GPT-4o mini...")
+        logger.info("🤖 Extrayendo información con Deepseek...")
         
         categories_list = ", ".join(CATEGORIES.keys())
         
@@ -131,7 +118,7 @@ Ejemplo:
 {{"name": "Hamburguesa Clásica", "price": 25000, "category": "burgers", "confidence": 0.95}}"""
 
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+            model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "Eres un asistente de restaurante que extrae información de platos de comandos de voz. Retorna solo JSON válido."},
                 {"role": "user", "content": prompt}
@@ -229,7 +216,7 @@ async def health_check():
     """Verifica el estado del servicio"""
     return HealthResponse(
         status="healthy",
-        openai_available=bool(openai.api_key),
+        deepseek_available=bool(openai.api_key),
         firebase_available=db is not None,
         timestamp=datetime.now().isoformat()
     )

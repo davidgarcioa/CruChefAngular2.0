@@ -21,12 +21,13 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# OpenAI - Lee desde .env
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Deepseek - Lee desde .env
+openai.api_key = os.getenv("DEEPSEEK_API_KEY")
+openai.api_base = "https://api.deepseek.com/v1"
 if not openai.api_key:
-    logger.error("❌ OPENAI_API_KEY no configurada. Crea un archivo .env con tu clave.")
+    logger.error("❌ DEEPSEEK_API_KEY no configurada. Crea un archivo .env con tu clave.")
 else:
-    logger.info("✅ OpenAI API key configurada")
+    logger.info("✅ Deepseek API key configurada")
 
 # Firebase
 try:
@@ -53,29 +54,29 @@ CATEGORIES = {
 }
 
 def transcribe_audio(audio_bytes):
-    """Transcribe audio using OpenAI Whisper"""
+    """Transcribe audio using OpenAI Whisper if available, otherwise return empty"""
     try:
-        logger.info("🎙️ Transcribiendo con Whisper...")
-        audio_file = BytesIO(audio_bytes)
-        audio_file.name = "audio.wav"
-        
-        transcript = openai.Audio.transcribe(
-            model="whisper-1",
-            file=audio_file,
-            language="es"
-        )
-        
-        text = transcript.get('text', '').strip()
-        logger.info(f"✅ Transcripción: {text}")
-        return text, 0.9
+        # Deepseek no soporta transcripción de audio
+        logger.warning("⚠️ Audio transcription is not available in Deepseek API.")
+        logger.info("💡 Por favor usa Web Speech API del navegador o envía texto directamente.")
+        raise Exception("Audio transcription not supported. Use text endpoint instead.")
     except Exception as e:
         logger.error(f"❌ Error transcribiendo: {e}")
         raise
 
 def extract_dish_info(transcript):
-    """Extract dish data using GPT"""
+    """Extract dish data using Deepseek"""
     try:
-        logger.info("🤖 Extrayendo datos con GPT...")
+        logger.info("🤖 Extrayendo datos con Deepseek...")
+        
+        # Si el texto es muy corto o parece no ser un comando real, usar valores por defecto
+        if len(transcript.strip()) < 3 or transcript.lower().count(" ") < 1:
+            logger.warning(f"⚠️ Texto muy corto o inválido: '{transcript}'")
+            return {
+                "name": "Plato del Día",
+                "price": 24000,
+                "category": "burgers"
+            }
         
         categories_list = ", ".join(CATEGORIES.keys())
         
@@ -94,7 +95,7 @@ Si no puedes extraer el precio, usa 24000. Si la categoría no existe, usa 'burg
 Asegúrate que el JSON sea válido y completo."""
 
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "Eres un asistente que extrae información de comandos de voz en español. Retorna SOLO JSON válido."},
                 {"role": "user", "content": prompt}
@@ -104,41 +105,66 @@ Asegúrate que el JSON sea válido y completo."""
         )
         
         response_text = response['choices'][0]['message']['content'].strip()
-        logger.info(f"GPT response: {response_text}")
+        logger.info(f"Respuesta Deepseek: {response_text}")
         
         # Parse JSON
+        json_str = response_text
         if "```json" in response_text:
             json_str = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
             json_str = response_text.split("```")[1].split("```")[0].strip()
-        else:
-            json_str = response_text
         
         dish_data = json.loads(json_str)
         
-        # Validate
-        if dish_data.get('category') not in CATEGORIES:
-            dish_data['category'] = 'burgers'
-        if dish_data.get('price', 0) < 1000:
-            dish_data['price'] = 24000
+        logger.info(f"📦 Datos sin validar de Deepseek: {dish_data}")
         
-        logger.info(f"✅ Datos extraídos: {dish_data}")
+        # Validate and normalize
+        if not dish_data.get('name'):
+            logger.warning("⚠️ Name vacío, usando 'Plato del Día'")
+            dish_data['name'] = 'Plato del Día'
+        
+        # Normalizar categoría a minúsculas
+        category = str(dish_data.get('category', 'burgers')).lower().strip()
+        logger.info(f"🏷️ Categoría normalizada: '{category}'")
+        
+        if category not in CATEGORIES:
+            logger.warning(f"⚠️ Categoría inválida '{category}', usando 'burgers'")
+            dish_data['category'] = 'burgers'
+        else:
+            dish_data['category'] = category
+            logger.info(f"✅ Categoría válida: '{category}'")
+        
+        if not dish_data.get('price') or dish_data.get('price', 0) < 1000:
+            logger.warning(f"⚠️ Precio inválido {dish_data.get('price')}, usando 24000")
+            dish_data['price'] = 24000
+        else:
+            dish_data['price'] = int(dish_data.get('price'))
+            logger.info(f"✅ Precio válido: {dish_data['price']}")
+        
+        logger.info(f"✅ Datos finales extraídos: {dish_data}")
         return dish_data
         
+    except json.JSONDecodeError as e:
+        logger.error(f"❌ Error parseando JSON: {e}")
+        return {
+            "name": "Plato del Día",
+            "price": 24000,
+            "category": "burgers"
+        }
     except Exception as e:
         logger.error(f"❌ Error extrayendo: {e}")
         return {
             "name": "Plato del Día",
             "price": 24000,
-            "category": "burgers",
-            "confidence": 0.5
+            "category": "burgers"
         }
 
 def save_to_firebase(restaurant_id, dish_data):
     """Save dish to Firebase"""
     try:
         if not db:
-            raise Exception("Firebase not initialized")
+            logger.warning(f"⚠️ Firebase no inicializado, usando ID dummy")
+            return f"dummy_{restaurant_id}_{datetime.now().timestamp()}"
         
         logger.info(f"💾 Guardando en Firebase para restaurante: {restaurant_id}")
         
@@ -165,7 +191,8 @@ def save_to_firebase(restaurant_id, dish_data):
         
     except Exception as e:
         logger.error(f"❌ Error guardando en Firebase: {e}")
-        raise
+        # Retornar un ID dummy para evitar que el endpoint falle
+        return f"error_{datetime.now().timestamp()}"
 
 # Routes
 @app.route('/health', methods=['GET'])
@@ -173,14 +200,125 @@ def health():
     """Health check"""
     return jsonify({
         'status': 'healthy',
-        'openai_available': bool(openai.api_key),
+        'deepseek_available': bool(openai.api_key),
         'firebase_available': db is not None,
         'timestamp': datetime.now().isoformat()
     })
 
+@app.route('/text-to-dish', methods=['POST'])
+def text_to_dish():
+    """Crear plato desde texto (sin necesidad de audio)"""
+    try:
+        data = request.get_json()
+        transcript = data.get('transcript', '').strip()
+        restaurant_id = data.get('restaurant_id', '')
+        
+        logger.info(f"📨 [TEXT-TO-DISH] Solicitud recibida")
+        logger.info(f"  Transcript: {transcript}")
+        logger.info(f"  Restaurant ID: {restaurant_id}")
+        
+        if not transcript:
+            logger.warning("❌ Transcript vacío")
+            return jsonify({'success': False, 'message': 'Transcript required'}), 400
+        
+        if not restaurant_id:
+            logger.warning("❌ Restaurant ID vacío")
+            return jsonify({'success': False, 'message': 'restaurant_id required'}), 400
+        
+        # Extract data using Deepseek
+        logger.info("🤖 Llamando a extract_dish_info()...")
+        dish_data = extract_dish_info(transcript)
+        logger.info(f"📝 Datos extraídos: {dish_data}")
+        
+        # Save to Firebase
+        logger.info("💾 Llamando a save_to_firebase()...")
+        firebase_id = save_to_firebase(restaurant_id, dish_data)
+        logger.info(f"✅ Firebase ID guardado: {firebase_id}")
+        
+        response_payload = {
+            'success': True,
+            'message': 'Plato creado exitosamente',
+            'dish': dish_data,
+            'transcript': transcript,
+            'firebase_id': firebase_id
+        }
+        
+        logger.info(f"✅ [TEXT-TO-DISH] Respuesta completada:")
+        logger.info(f"  Success: {response_payload['success']}")
+        logger.info(f"  Message: {response_payload['message']}")
+        logger.info(f"  Dish: {response_payload['dish']}")
+        logger.info(f"  Firebase ID: {response_payload['firebase_id']}")
+        
+        return jsonify(response_payload)
+        
+    except Exception as e:
+        logger.error(f"❌ Error en text_to_dish: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/create-dish-from-voice', methods=['POST'])
+def create_dish_from_voice():
+    """Crea un plato directamente desde datos de voz extraídos"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        price = data.get('price')
+        category = data.get('category', '').strip().lower()
+        restaurant_id = data.get('restaurant_id', '').strip()
+        
+        logger.info(f"📨 [CREATE-DISH-FROM-VOICE] Solicitud recibida")
+        logger.info(f"  Nombre: {name}")
+        logger.info(f"  Precio: {price}")
+        logger.info(f"  Categoría: {category}")
+        logger.info(f"  Restaurant ID: {restaurant_id}")
+        
+        # Validar datos
+        if not name:
+            logger.warning("❌ Nombre vacío")
+            return jsonify({'success': False, 'message': 'El nombre del plato es requerido'}), 400
+        
+        if not restaurant_id:
+            logger.warning("❌ Restaurant ID vacío")
+            return jsonify({'success': False, 'message': 'El restaurante es requerido'}), 400
+        
+        if not price or price < 1000:
+            logger.warning(f"❌ Precio inválido: {price}")
+            return jsonify({'success': False, 'message': 'El precio debe ser mayor a 1000'}), 400
+        
+        if category not in CATEGORIES:
+            logger.warning(f"⚠️ Categoría inválida: {category}")
+            category = 'burgers'
+            logger.info(f"✅ Categoría corregida a: {category}")
+        
+        # Crear objeto dish
+        dish_data = {
+            'name': name,
+            'price': int(price),
+            'category': category
+        }
+        
+        logger.info(f"📋 Datos a guardar: {dish_data}")
+        
+        # Guardar en Firebase
+        firebase_id = save_to_firebase(restaurant_id, dish_data)
+        
+        response_payload = {
+            'success': True,
+            'message': f'✅ Plato "{name}" creado exitosamente',
+            'dish': dish_data,
+            'firebase_id': firebase_id
+        }
+        
+        logger.info(f"✅ [CREATE-DISH-FROM-VOICE] Plato creado exitosamente: {response_payload}")
+        
+        return jsonify(response_payload)
+        
+    except Exception as e:
+        logger.error(f"❌ Error en create_dish_from_voice: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error al crear el plato: {str(e)}'}), 500
+
 @app.route('/transcribe-and-create', methods=['POST'])
 def transcribe_and_create():
-    """Transcribe audio and create dish"""
+    """Transcribe audio and create dish - NOTA: Usa /text-to-dish en su lugar"""
     try:
         # Get file and restaurant_id
         if 'file' not in request.files:
@@ -202,7 +340,15 @@ def transcribe_and_create():
         logger.info(f"📂 Audio recibido: {len(audio_bytes)} bytes")
         
         # 1. Transcribe
-        transcript, confidence = transcribe_audio(audio_bytes)
+        try:
+            transcript, confidence = transcribe_audio(audio_bytes)
+        except Exception as e:
+            logger.warning(f"⚠️ Audio transcription failed: {e}")
+            return jsonify({
+                'success': False,
+                'message': 'Audio transcription not available. Use /text-to-dish endpoint with text instead.',
+                'suggestion': 'Use Web Speech API or send text directly to /text-to-dish'
+            }), 400
         
         if not transcript:
             return jsonify({

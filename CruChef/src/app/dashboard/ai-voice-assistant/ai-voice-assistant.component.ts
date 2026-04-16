@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 
 import { categories } from '../dashboard.data';
 import { OwnerService } from '../owner.service';
-import { AiVoiceAssistantService, DishResponse } from './ai-voice-assistant-new.service';
+import { AiVoiceAssistantService, DishResponse } from './ai-voice-assistant-web-speech.service';
 
 @Component({
   selector: 'app-ai-voice-assistant',
@@ -19,6 +19,7 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
   private readonly voiceService = inject(AiVoiceAssistantService);
   private readonly ownerService = inject(OwnerService);
   private readonly fb = inject(FormBuilder);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // Voice service signals
   readonly isListening = this.voiceService.isListening;
@@ -38,6 +39,12 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
   readonly isProcessing = signal(false);
   readonly hasRequestedMicPermission = signal(false);
   readonly useManualMode = signal(false);
+
+  // NUEVOS: Signals para datos extraídos del backend
+  readonly extractedDishName = signal('');
+  readonly extractedDishPrice = signal(24000);
+  readonly extractedDishCategory = signal('burgers');
+  readonly hasExtractedData = computed(() => !!this.extractedDishName());
 
   readonly categoryOptions = categories.filter((category) => category.id !== 'all');
 
@@ -85,53 +92,83 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
 
   async stopListening(): Promise<void> {
     try {
-      this.isProcessing.set(true);
-      this.error.set('Procesando audio con IA...');
+      console.log('[Component] ⏹️ stopListening() iniciado');
+      this.dishError.set('');
+      this.dishSuccess.set('');
 
-      // Detener grabación y obtener el blob
-      const audioBlob = await this.voiceService.stopListening();
+      // Detener la grabación
+      await this.voiceService.stopListening();
+      console.log('[Component] voiceService.stopListening() completado');
 
-      if (!audioBlob) {
-        this.voiceService.speak('No se capturó audio. Intenta nuevamente.');
-        this.isProcessing.set(false);
+      // Obtener el texto transcrito (puede estar vacío si falló)
+      const transcript = this.voiceService.transcript();
+      console.log('[Component] 📝 Transcript capturado:', transcript);
+      console.log('[Component] Transcript longitud:', transcript?.length);
+      console.log('[Component] Transcript está vacío:', !transcript || !transcript.trim());
+
+      if (!transcript || !transcript.trim()) {
+        console.warn('[Component] ⚠️ Transcript vacío o no capturado');
+        this.voiceService.speak('No se detectó voz. Por favor intenta de nuevo.');
+        this.dishError.set('No se detectó voz. Por favor intenta de nuevo.');
         return;
       }
 
-      // Guardar para uso posterior
-      this.pendingAudioBlob = audioBlob;
-
-      // Enviar al backend Python
+      // Validar restaurante
       if (!this.selectedRestaurantId()) {
+        console.warn('[Component] ⚠️ Restaurante no seleccionado');
         this.dishError.set('Por favor, selecciona un restaurante primero');
-        this.isProcessing.set(false);
         return;
       }
 
-      const response = await this.voiceService.sendAudioToBackend(
-        audioBlob,
+      console.log('[Component] ✅ Enviando texto al backend');
+      console.log('[Component] Transcript:', transcript);
+      console.log('[Component] Restaurant ID:', this.selectedRestaurantId());
+
+      this.isProcessing.set(true);
+
+      // Enviar el texto al backend para extracción de datos
+      const response = await this.voiceService.sendTextToBackend(
+        transcript,
         this.selectedRestaurantId() || ''
       );
 
+      console.log('[Component] ✅ Respuesta recibida del backend:', response);
+      console.log('[Component] success:', response.success);
+      console.log('[Component] dish:', response.dish);
+
       if (response.success && response.dish) {
-        // Actualizar formulario con datos del backend
-        this.dishForm.patchValue({
-          name: response.dish.name,
-          price: response.dish.price,
-          categoryId: response.dish.category,
-        });
+        console.log('[Component] 🎯 Datos válidos, guardando en signals');
+
+        const dishName = (response.dish.name || '').trim() || 'Plato del Día';
+        const dishPrice = Number(response.dish.price) || 24000;
+        const dishCategory = (response.dish.category || 'burgers').toLowerCase();
+
+        console.log('[Component] Guardando:', { dishName, dishPrice, dishCategory });
+
+        this.extractedDishName.set(dishName);
+        this.extractedDishPrice.set(dishPrice);
+        this.extractedDishCategory.set(dishCategory);
+
+        console.log('[Component] ✅ Datos guardados en signals');
+        console.log('[Component] hasExtractedData():', this.hasExtractedData());
 
         this.voiceService.speak(
-          `Plato: ${response.dish.name}. Precio: ${response.dish.price} pesos. Categoría: ${response.dish.category}. Por favor confirma.`
+          `Plato: ${dishName}. Precio: ${dishPrice} pesos. Categoría: ${dishCategory}. Por favor confirma.`
         );
 
         this.dishSuccess.set('✅ ' + response.message);
       } else {
-        this.voiceService.speak(response.message || 'Error procesando el audio');
-        this.dishError.set(response.message || 'No se pudo procesar el audio');
+        console.error('[Component] ❌ Respuesta inválida del backend:', response);
+        const errorMsg = response.message || 'No se pudo procesar el comando';
+        this.voiceService.speak(errorMsg);
+        this.dishError.set(errorMsg);
       }
     } catch (error: any) {
-      console.error('Error:', error);
-      this.voiceService.speak('Error procesando el audio. Intenta nuevamente.');
+      console.error('[Component] ❌ Error en stopListening:', error);
+      console.error('[Component] Error message:', error.message);
+      console.error('[Component] Error stack:', error.stack);
+
+      this.voiceService.speak('Error procesando el comando. Intenta nuevamente.');
       this.dishError.set(
         error.message || 'Error comunicándose con el servicio de IA'
       );
@@ -146,6 +183,63 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
     this.dishError.set('');
     this.dishSuccess.set('');
     this.pendingAudioBlob = null;
+  }
+
+  applyExtractedDataToForm(): void {
+    console.log('[Component] 📋 Creando plato desde datos extraídos');
+    
+    const dishName = this.extractedDishName();
+    const dishPrice = this.extractedDishPrice();
+    const dishCategory = this.extractedDishCategory();
+    const restaurantId = this.selectedRestaurantId();
+
+    console.log('[Component] 🎤 Datos a crear:', { dishName, dishPrice, dishCategory, restaurantId });
+
+    if (!restaurantId) {
+      this.voiceService.speak('Error: restaurante no seleccionado');
+      this.dishError.set('Por favor selecciona un restaurante');
+      return;
+    }
+
+    // Mostrar que está procesando
+    this.isProcessing.set(true);
+    this.dishSuccess.set('');
+    this.dishError.set('');
+
+    this.voiceService.speak('Guardando plato, por favor espera...');
+
+    // Llamar directamente al endpoint de creación
+    this.voiceService.createDishFromVoice(dishName, dishPrice, dishCategory, restaurantId).then(
+      (response) => {
+        console.log('[Component] ✅ Plato creado exitosamente:', response);
+        
+        this.dishSuccess.set(`✅ ${response.message}`);
+        this.voiceService.speak(response.message || 'Plato creado exitosamente');
+
+        // Limpiar todo después de 2 segundos
+        setTimeout(() => {
+          this.clearExtractedData();
+          this.clearTranscript();
+          this.dishSuccess.set('');
+        }, 2000);
+      },
+      (error) => {
+        console.error('[Component] ❌ Error creando plato:', error);
+        
+        const errorMsg = error.error?.message || error.message || 'Error al crear el plato';
+        this.dishError.set(errorMsg);
+        this.voiceService.speak('Error: ' + errorMsg);
+      }
+    ).finally(() => {
+      this.isProcessing.set(false);
+    });
+  }
+
+  clearExtractedData(): void {
+    console.log('[Component] 🗑️ Limpiando datos extraídos');
+    this.extractedDishName.set('');
+    this.extractedDishPrice.set(24000);
+    this.extractedDishCategory.set('burgers');
   }
 
   confirmAndCreateDish(): void {
@@ -245,21 +339,49 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.selectedRestaurantId()) {
+      this.dishError.set('Por favor, selecciona un restaurante primero');
+      return;
+    }
+
     this.isProcessing.set(true);
 
     try {
-      // Intentar parsear el texto manual
-      const command = this.voiceService.parseVoiceCommand(text);
+      // Usar el backend (Deepseek) para procesar el texto
+      this.voiceService.sendTextToBackend(text.trim(), this.selectedRestaurantId() || '')
+        .then((response) => {
+          if (response.success && response.dish) {
+            // Actualizar formulario con datos del backend
+            this.dishForm.patchValue({
+              name: response.dish.name,
+              price: response.dish.price,
+              categoryId: response.dish.category,
+            });
 
-      this.dishForm.patchValue({
-        name: command.dishName || text,
-        price: command.price || 24000,
-        categoryId: command.category || 'burgers',
-      });
+            this.voiceService.speak(
+              `Plato: ${response.dish.name}. Precio: ${response.dish.price} pesos. Categoría: ${response.dish.category}. Por favor confirma.`
+            );
 
-      this.voiceService.speak(`Plato: ${command.dishName || text}. Por favor confirme.`);
-    } finally {
+            this.dishSuccess.set('✅ ' + response.message);
+          } else {
+            this.voiceService.speak(response.message || 'Error procesando el texto');
+            this.dishError.set(response.message || 'No se pudo procesar el texto');
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          this.voiceService.speak('Error procesando el texto. Intenta nuevamente.');
+          this.dishError.set(
+            error.message || 'Error comunicándose con el servicio de IA'
+          );
+        })
+        .finally(() => {
+          this.isProcessing.set(false);
+        });
+    } catch (error: any) {
+      console.error('Error:', error);
       this.isProcessing.set(false);
+      this.dishError.set(error.message || 'Error procesando el texto');
     }
   }
 }
