@@ -1,4 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
+﻿import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
@@ -162,7 +162,18 @@ export class OrderService {
     }
 
     if (error instanceof Error) {
-      return error.message;
+      const message = error.message ?? '';
+
+      if (
+        message.includes('UNAUTHENTICATED') ||
+        message.includes('invalid authentication credentials') ||
+        message.includes('auth/argument-error') ||
+        message.includes('auth/user-not-found')
+      ) {
+        return 'Tu sesion expiro o ya no es valida. Vuelve a iniciar sesion antes de confirmar el pedido.';
+      }
+
+      return this.authService.getErrorMessage(error);
     }
 
     return 'No se pudo completar la operacion del pedido.';
@@ -242,5 +253,6 @@ export class OrderService {
     return this.toMillis(value);
   }
 }
+
 
 

@@ -1,4 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
+﻿import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { FirebaseError } from 'firebase/app';
 import {
@@ -199,6 +199,15 @@ export class AuthService {
         : error instanceof Error
           ? error.message
           : '';
+
+    if (
+      typeof code === 'string' &&
+      (code.includes('UNAUTHENTICATED') ||
+        code.includes('invalid authentication credentials') ||
+        code.includes('auth/argument-error'))
+    ) {
+      return 'Tu sesion ya no es valida. Cierra sesion e inicia de nuevo para continuar.';
+    }
 
     switch (code) {
       case 'auth/email-already-in-use':

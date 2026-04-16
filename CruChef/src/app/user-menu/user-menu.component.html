@@ -7,7 +7,23 @@
         <p class="eyebrow">Vista de usuario</p>
         <h1>{{ pageTitle() }}</h1>
         <p class="lead">
-          @if (currentView() === 'menu') {
+          @if (userAlerts().length > 0) {
+      <section class="section-block fade-slide delay-1">
+        <div class="order-alert-stack">
+          @for (alert of userAlerts(); track alert.id) {
+            <article class="order-alert order-alert--{{ alert.tone }}">
+              <div>
+                <strong>{{ alert.title }}</strong>
+                <p>{{ alert.detail }}</p>
+              </div>
+              <button type="button" class="order-alert__close" (click)="dismissUserAlert(alert.id)">Cerrar</button>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (currentView() === 'menu') {
             Estas viendo el menu de <span>{{ currentRestaurantLabel() }}</span>.
           } @else {
             {{ pageLead() }}
@@ -15,6 +31,22 @@
         </p>
       </div>
     </header>
+
+    @if (userAlerts().length > 0) {
+      <section class="section-block fade-slide delay-1">
+        <div class="order-alert-stack">
+          @for (alert of userAlerts(); track alert.id) {
+            <article class="order-alert order-alert--{{ alert.tone }}">
+              <div>
+                <strong>{{ alert.title }}</strong>
+                <p>{{ alert.detail }}</p>
+              </div>
+              <button type="button" class="order-alert__close" (click)="dismissUserAlert(alert.id)">Cerrar</button>
+            </article>
+          }
+        </div>
+      </section>
+    }
 
     @if (currentView() === 'menu') {
       <section class="focus-panel section-block fade-slide delay-1">
@@ -374,3 +406,4 @@
     }
   </section>
 </main>
+

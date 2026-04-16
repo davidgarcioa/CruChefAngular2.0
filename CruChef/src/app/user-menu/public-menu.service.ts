@@ -1,4 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
+﻿import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { FirebaseError } from 'firebase/app';
 import {
@@ -51,7 +51,13 @@ export class PublicMenuService {
             restaurantsRef,
             (snapshot) => {
               const restaurants = snapshot.docs
-                .map((document) => this.mapRestaurant(document.id, document.data(), document.ref.parent.parent?.id ?? ''))
+                .map((document) =>
+                  this.mapRestaurant(
+                    document.id,
+                    document.data(),
+                    document.ref.parent.parent?.id ?? '',
+                  ),
+                )
                 .sort((left, right) => left.name.localeCompare(right.name));
 
               subscriber.next(restaurants);
@@ -92,9 +98,7 @@ export class PublicMenuService {
             dishesRef,
             (snapshot) => {
               const dishes = snapshot.docs
-                .map((document) =>
-                  this.mapDish(document.id, document.data(), currentRestaurantId),
-                )
+                .map((document) => this.mapDish(document.id, document.data(), currentRestaurantId))
                 .sort((left, right) => left.name.localeCompare(right.name));
 
               subscriber.next(dishes);
@@ -110,6 +114,15 @@ export class PublicMenuService {
 
   getErrorMessage(error: unknown): string {
     const code = this.getErrorCode(error);
+
+    if (
+      code.includes('UNAUTHENTICATED') ||
+      code.includes('invalid authentication credentials') ||
+      code.includes('auth/user-not-found') ||
+      code.includes('auth/argument-error')
+    ) {
+      return 'Tu sesion ya no es valida. Vuelve a iniciar sesion para cargar el menu.';
+    }
 
     switch (code) {
       case 'permission-denied':
@@ -180,10 +193,7 @@ export class PublicMenuService {
       name: String(document['name'] ?? ''),
       price: Number(document['price'] ?? 0),
       rating: Number(document['rating'] ?? 0),
-      ratingCount: Number(
-        document['ratingCount'] ??
-          (Number(document['rating'] ?? 0) > 0 ? 1 : 0),
-      ),
+      ratingCount: Number(document['ratingCount'] ?? (Number(document['rating'] ?? 0) > 0 ? 1 : 0)),
       ratingTotal: Number(
         document['ratingTotal'] ??
           Number(document['rating'] ?? 0) *

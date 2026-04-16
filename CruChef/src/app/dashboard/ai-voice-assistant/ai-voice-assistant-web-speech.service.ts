@@ -1,6 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Subject } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 
 declare global {
   interface Window {
@@ -33,6 +34,7 @@ export interface DishResponse {
 })
 export class AiVoiceAssistantService {
   private readonly BACKEND_URL = 'http://localhost:8000';
+  private readonly platformId = inject(PLATFORM_ID);
   private recognition: any = null;
 
   isListening = signal(false);
@@ -50,11 +52,17 @@ export class AiVoiceAssistantService {
   }
 
   private checkSupport(): boolean {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') {
+      return false;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     return !!SpeechRecognition;
   }
 
   private initRecognition(): void {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') return;
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
@@ -281,7 +289,7 @@ export class AiVoiceAssistantService {
   }
 
   speak(text: string): void {
-    if (!('speechSynthesis' in window)) {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       console.warn('[Voice] Speech Synthesis no soportado');
       return;
     }
@@ -304,3 +312,4 @@ export class AiVoiceAssistantService {
     return null;
   }
 }
+

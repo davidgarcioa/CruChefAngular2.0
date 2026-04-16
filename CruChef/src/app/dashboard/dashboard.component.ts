@@ -23,6 +23,15 @@ import { DishFormValue, OwnerService } from './owner.service';
 import { SearchBarComponent } from './search-bar/search-bar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 
+interface DashboardOrderAlert {
+  id: string;
+  tone: 'info' | 'success' | 'warning';
+  title: string;
+  detail: string;
+  orderId: string;
+  createdAt: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -44,6 +53,8 @@ export class DashboardComponent {
   private readonly ownerService = inject(OwnerService);
   private readonly orderService = inject(OrderService);
   private readonly destroyRef = inject(DestroyRef);
+  private previousOwnerOrderStatuses = new Map<string, OrderStatus>();
+  private ownerAlertSequence = 0;
 
   readonly navigationItems = ownerNavigationItems;
   readonly categories = categories;
@@ -62,6 +73,7 @@ export class DashboardComponent {
   readonly dishSuccess = signal('');
   readonly ownerOrderError = signal('');
   readonly ownerOrderSuccess = signal('');
+  readonly ownerAlerts = signal<DashboardOrderAlert[]>([]);
   readonly currentView = signal(
     (this.route.snapshot.data['view'] as string | undefined) ?? 'restaurants',
   );
@@ -257,6 +269,7 @@ export class DashboardComponent {
       )
       .subscribe({
         next: (orders) => {
+          this.syncOwnerOrderAlerts(orders);
           this.ownerOrders.set(orders);
           this.ownerOrderError.set('');
         },
@@ -386,6 +399,10 @@ export class DashboardComponent {
     }
   }
 
+  dismissOwnerAlert(alertId: string): void {
+    this.ownerAlerts.update((alerts) => alerts.filter((alert) => alert.id !== alertId));
+  }
+
   getOrderStatusLabel(status: OrderStatus): string {
     return orderStatusLabelMap[status];
   }
@@ -409,6 +426,48 @@ export class DashboardComponent {
     }
   }
 
+  private syncOwnerOrderAlerts(orders: Order[]): void {
+    const nextStatuses = new Map<string, OrderStatus>();
+
+    orders.forEach((order) => {
+      nextStatuses.set(order.id, order.status);
+      const previousStatus = this.previousOwnerOrderStatuses.get(order.id);
+
+      if (!previousStatus) {
+        if (order.status === 'pending') {
+          this.pushOwnerAlert({
+            tone: 'info',
+            title: 'Nuevo pedido recibido',
+            detail: order.customerName + ' pidio ' + order.dishName + ' en ' + order.restaurantName + '.',
+            orderId: order.id,
+          });
+        }
+        return;
+      }
+
+      if (previousStatus !== order.status && order.status === 'cancelled') {
+        this.pushOwnerAlert({
+          tone: 'warning',
+          title: 'Pedido cancelado',
+          detail: 'El pedido de ' + order.customerName + ' para ' + order.dishName + ' fue cancelado.',
+          orderId: order.id,
+        });
+      }
+    });
+
+    this.previousOwnerOrderStatuses = nextStatuses;
+  }
+
+  private pushOwnerAlert(alert: Omit<DashboardOrderAlert, 'id' | 'createdAt'>): void {
+    const nextAlert: DashboardOrderAlert = {
+      ...alert,
+      id: 'owner-alert-' + ++this.ownerAlertSequence,
+      createdAt: Date.now(),
+    };
+
+    this.ownerAlerts.update((alerts) => [nextAlert, ...alerts].slice(0, 5));
+  }
+
   private filterOrdersByRestaurant(orders: Order[]): Order[] {
     const restaurantId = this.selectedOrderRestaurantId();
 
@@ -419,3 +478,6 @@ export class DashboardComponent {
     return orders.filter((order) => order.restaurantId === restaurantId);
   }
 }
+
+
+
