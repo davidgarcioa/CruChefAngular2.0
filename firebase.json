@@ -1,0 +1,41 @@
+{
+  "functions": [
+    {
+      "source": "Backend",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local",
+        "firebase-key.json",
+        "*.py",
+        "requirements.txt",
+        "install.bat"
+      ]
+    }
+  ],
+  "hosting": {
+    "public": "CruChef/dist/CruChef/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "function": {
+          "functionId": "api",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.csr.html"
+      }
+    ]
+  }
+}

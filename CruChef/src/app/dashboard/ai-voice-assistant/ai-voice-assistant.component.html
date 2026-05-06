@@ -1,0 +1,470 @@
+<div class="ai-voice-container">
+  <header class="ai-header">
+    <h1>Asistente de Voz IA</h1>
+    <p class="subtitle">Cree platos usando comandos de voz</p>
+  </header>
+
+  <!-- ERROR MESSAGES -->
+  @if ((error() || dishError()) && !isProcessing()) {
+    <div class="message message--error">
+      <span class="material-symbols-outlined">error</span>
+      <div style="flex: 1;">
+        <strong>{{ error() || dishError() }}</strong>
+        @if (error() && error().includes('network')) {
+          <div style="margin: 0.5rem 0 0; font-size: 0.85rem; line-height: 1.4; color: #d1d5db;">
+            El servidor de reconocimiento de voz no está disponible. Intenta con conexión Wi-Fi estable.
+            <br />
+            <strong style="color: #fbbf24; display: block; margin-top: 0.5rem;">Alternativas:</strong>
+            <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.85rem; color: inherit;">
+              <li>Verifica tu conexión a Internet</li>
+              <li>Usa modo manual para escribir directamente</li>
+              <li>Espera unos minutos e intenta nuevamente</li>
+            </ul>
+          </div>
+        }
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+          @if (error() && canStartListening()) {
+            <button type="button" (click)="retryVoiceInput()" class="btn btn--secondary" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.85rem;">
+              <span class="material-symbols-outlined">refresh</span>
+              Reintentar
+            </button>
+          }
+          @if (error() && error().includes('network')) {
+            <button type="button" (click)="toggleManualMode()" class="btn btn--secondary" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.85rem; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5);">
+              <span class="material-symbols-outlined">edit</span>
+              Modo Manual
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SUCCESS MESSAGES -->
+  @if (dishSuccess()) {
+    <div class="message message--success">
+      <span class="material-symbols-outlined">check_circle</span>
+      {{ dishSuccess() }}
+    </div>
+  }
+
+  <!-- ADVERTENCIA: PERMISOS DE MICRÓFONO -->
+  @if (hasRequestedMicPermission() && !isVoiceSupported()) {
+    <div class="message message--error">
+      <span class="material-symbols-outlined">mic_off</span>
+      <div>
+        <strong>Micrófono no disponible</strong>
+        <p style="margin: 0.5rem 0 0; font-size: 0.9rem;">Por favor, asegúrate de que:</p>
+        <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem; font-size: 0.9rem;">
+          <li>Tienes un navegador compatible (Chrome, Edge, Safari)</li>
+          <li>Has otorgado permiso de micrófono</li>
+          <li>Tu conexión a internet es estable</li>
+        </ul>
+      </div>
+    </div>
+  }
+
+  <div class="main-content">
+    <!-- VOICE CONTROL SECTION -->
+    <section class="voice-section">
+      <h2>Comandos de Voz</h2>
+
+      @if (useManualMode()) {
+        <div style="padding: 1rem; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-left: 3px solid #22c55e; border-radius: 6px; margin-bottom: 1.5rem; color: #86efac;">
+          <strong>✓ Modo Manual Activado</strong>
+          <p style="margin: 0.5rem 0 0; font-size: 0.9rem;">
+            Escribe directamente en el campo de texto. Haz clic en "Salir de Modo Manual" cuando termines.
+          </p>
+          <button
+            type="button"
+            (click)="toggleManualMode()"
+            class="toggle-manual-exit-btn"
+          >
+            ← Volver al Modo de Voz
+          </button>
+        </div>
+      }
+
+      <div class="voice-buttons">
+        <button
+          class="btn btn--voice--start"
+          (click)="startListening()"
+          [disabled]="!canStartListening() || !isVoiceSupported() || useManualMode()"
+          type="button"
+          [title]="!isVoiceSupported() ? 'Micrófono no disponible' : useManualMode() ? 'Desactiva el modo manual primero' : 'Inicia la grabación de voz'"
+        >
+          <span class="material-symbols-outlined">mic</span>
+          Iniciar
+        </button>
+
+        <button
+          class="btn btn--voice--stop"
+          (click)="stopListening()"
+          [disabled]="!isListening()"
+          type="button"
+          title="Detiene la grabación y procesa el audio"
+        >
+          <span class="material-symbols-outlined">stop_circle</span>
+          Detener
+        </button>
+
+        <button
+          class="btn btn--voice--clear"
+          (click)="clearTranscript()"
+          [disabled]="!transcript()"
+          type="button"
+          title="Limpia el texto actual"
+        >
+          <span class="material-symbols-outlined">clear</span>
+          Limpiar
+        </button>
+      </div>
+
+      <!-- TRANSCRIPT DISPLAY -->
+      @if (transcript()) {
+        <div class="transcript-box">
+          <h3>Texto Reconocido</h3>
+          <p class="transcript-text">{{ transcript() }}</p>
+          @if (confidence() > 0) {
+            <p class="confidence">
+              Confianza: <strong>{{ (confidence() * 100).toFixed(0) }}%</strong>
+            </p>
+          }
+          <div class="listening-indicator" [class.active]="isListening()">
+            <span class="pulse"></span>
+            {{ isListening() ? '🎙️ Escuchando...' : '✓ Procesado' }}
+          </div>
+        </div>
+      } @else if (!isListening() && !isProcessing()) {
+        <div style="padding: 2rem; text-align: center; color: #9ca3af;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎤</div>
+          <p style="margin: 0;">Haz clic en <strong>"Iniciar"</strong> para comenzar a hablar</p>
+        </div>
+      }
+
+      @if (isProcessing()) {
+        <div style="padding: 2rem; text-align: center; color: #9ca3af; animation: pulse-glow 2s ease-in-out infinite;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.75rem; animation: spin 1s linear infinite;">⏳</div>
+          <p style="margin: 0;">Procesando audio...</p>
+        </div>
+      }
+    </section>
+
+    <!-- FORM SECTION -->
+    <section class="form-section">
+      <h2>Datos del Plato</h2>
+
+      <!-- EXTRACTED DATA PREVIEW -->
+      @if (hasExtractedData()) {
+        <div style="padding: 1.5rem; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.5); border-left: 4px solid #22c55e; border-radius: 8px; margin-bottom: 2rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <span class="material-symbols-outlined" style="color: #22c55e; font-size: 1.5rem;">verified</span>
+            <h3 style="margin: 0; color: #86efac;">✅ Datos Extraídos de tu VOZ</h3>
+          </div>
+
+          <p style="margin: 0 0 1rem 0; color: #9ca3af; font-size: 0.9rem;">
+            Estos datos se enviarán directamente al crear el plato. Verifica que sean correctos:
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 6px;">
+              <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #9ca3af;">📝 Nombre</p>
+              <p style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #86efac;">{{ extractedDishName() }}</p>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 6px;">
+              <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #9ca3af;">💰 Precio</p>
+              <p style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #86efac;">{{ extractedDishPrice() | currency: 'COP': 'symbol': '0.0' }}</p>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 6px; grid-column: 1 / -1;">
+              <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #9ca3af;">🏷️ Categoría</p>
+              <p style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #86efac;">
+                {{ categoryOptions.find(c => c.id === extractedDishCategory())?.icon }}
+                {{ categoryOptions.find(c => c.id === extractedDishCategory())?.name }}
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem;">
+            <button
+              type="button"
+              (click)="applyExtractedDataToForm()"
+              [disabled]="isProcessing()"
+              class="btn btn--success"
+              style="flex: 1; background: #22c55e; border-color: #22c55e;"
+            >
+              @if (isProcessing()) {
+                <span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">hourglass_bottom</span>
+                Creando Plato...
+              } @else {
+                <span class="material-symbols-outlined">check_circle</span>
+                ✅ Crear Plato
+              }
+            </button>
+
+            <button
+              type="button"
+              (click)="clearExtractedData()"
+              [disabled]="isProcessing()"
+              class="btn btn--secondary"
+              style="flex: 1;"
+            >
+              <span class="material-symbols-outlined">close</span>
+              Rechazar
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- MANUAL MODE TOGGLE -->
+      @if (error() && error().includes('network')) {
+        <div style="padding: 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-left: 3px solid #3b82f6; border-radius: 6px; margin-bottom: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+            <div style="color: #93c5fd; font-size: 0.9rem;">
+              <strong>💡 Opción:</strong> Modo manual disponible para escribir directamente
+            </div>
+            <button
+              type="button"
+              (click)="toggleManualMode()"
+              class="toggle-manual-btn"
+              [class.active]="useManualMode()"
+            >
+              {{ useManualMode() ? '✓ Modo Manual Activo' : '📝 Activar Modo Manual' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- MANUAL TEXT INPUT -->
+      @if (useManualMode()) {
+        <div class="form-group" style="margin-bottom: 2rem;">
+          <label for="manual-text" class="form-label">
+            ✍️ Escribe el nombre del plato
+          </label>
+          <textarea
+            id="manual-text"
+            #manualInput
+            (blur)="processManualText(manualInput.value)"
+            class="form-input"
+            placeholder="Ej: Hamburguesa clásica de 24000 pesos en burgers"
+            style="min-height: 80px; resize: vertical; padding: 1rem;"
+            [disabled]="isSavingDish()"
+          ></textarea>
+          <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 0.5rem;">
+            💡 Puedes incluir el precio y categoría o completarlos después
+          </p>
+        </div>
+      }
+
+      <!-- RESTAURANTE SELECTION -->
+      <div class="form-group">
+        <label for="restaurant" class="form-label">
+          🏪 Restaurante*
+        </label>
+        @if (restaurants().length === 0) {
+          <div class="message message--warning">
+            <strong>⚠️ Cargando restaurantes...</strong>
+          </div>
+        } @else {
+          <select
+            [(ngModel)]="selectedRestaurantId"
+            id="restaurant"
+            class="form-input"
+            [disabled]="isListening() || isSavingDish()"
+          >
+            <option value="">-- Selecciona un restaurante --</option>
+            @for (restaurant of restaurants(); track restaurant.id) {
+              <option [value]="restaurant.id">{{ restaurant.name }}</option>
+            }
+          </select>
+        }
+      </div>
+
+      <!-- FORM -->
+      <form [formGroup]="dishForm" class="dish-form">
+        <!-- NAME -->
+        <div class="form-group">
+          <label for="name" class="form-label">
+            📝 Nombre del Plato*
+          </label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            class="form-input"
+            placeholder="Ej: Hamburguesa Clásica"
+            [disabled]="isListening() || isSavingDish()"
+          />
+          @if (dishForm.get('name')?.hasError('required') && dishForm.get('name')?.touched) {
+            <span class="form-error">El nombre es requerido</span>
+          }
+          @if (dishForm.get('name')?.hasError('minlength') && dishForm.get('name')?.touched) {
+            <span class="form-error">El nombre debe tener al menos 2 caracteres</span>
+          }
+        </div>
+
+        <!-- PRICE -->
+        <div class="form-group">
+          <label for="price" class="form-label">
+            💰 Precio (COP)*
+          </label>
+          <input
+            id="price"
+            type="number"
+            formControlName="price"
+            class="form-input"
+            placeholder="Ej: 24000"
+            min="1000"
+            [disabled]="isListening() || isSavingDish()"
+          />
+          @if (dishForm.get('price')?.hasError('required') && dishForm.get('price')?.touched) {
+            <span class="form-error">El precio es requerido</span>
+          }
+          @if (dishForm.get('price')?.hasError('min') && dishForm.get('price')?.touched) {
+            <span class="form-error">El precio mínimo es 1000 COP</span>
+          }
+        </div>
+
+        <!-- CATEGORY -->
+        <div class="form-group">
+          <label for="category" class="form-label">
+            🏷️ Categoría*
+          </label>
+          <select
+            id="category"
+            formControlName="categoryId"
+            class="form-input"
+            [disabled]="isListening() || isSavingDish()"
+          >
+            <option value="">-- Selecciona una categoría --</option>
+            @for (category of categoryOptions; track category.id) {
+              <option [value]="category.id">{{ category.icon }} {{ category.name }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- CATEGORY PREVIEW -->
+        @if (dishForm.get('categoryId')?.value) {
+          <div class="category-preview">
+            <span class="preview-icon">
+              {{ categoryOptions.find(c => c.id === dishForm.get('categoryId')?.value)?.icon }}
+            </span>
+            <span class="preview-name">
+              {{ categoryOptions.find(c => c.id === dishForm.get('categoryId')?.value)?.name }}
+            </span>
+          </div>
+        }
+
+        <!-- ACTION BUTTONS -->
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="confirmAndCreateDish()"
+            [disabled]="!isFormValid() || isSavingDish() || !selectedRestaurantId()"
+            [title]="!selectedRestaurantId() ? 'Selecciona un restaurante primero' : 'Crea el plato con los datos actuales'"
+          >
+            <span class="material-symbols-outlined">check_circle</span>
+            {{ isSavingDish() ? '⏳ Creando...' : '✓ Confirmar y Crear' }}
+          </button>
+
+          <button
+            type="button"
+            class="btn btn--secondary"
+            (click)="clearTranscript()"
+            [disabled]="!transcript()"
+          >
+            <span class="material-symbols-outlined">refresh</span>
+            🔄 Limpiar Todo
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- CONFIRMATION MODAL -->
+  @if (showConfirmation()) {
+    <div class="modal-overlay" (click)="cancelConfirmation()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Confirmar Creación de Plato</h2>
+          <button
+            type="button"
+            class="close-btn"
+            (click)="cancelConfirmation()"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="modal-content">
+          <p>¿Desea crear el siguiente plato?</p>
+
+          <div class="confirmation-details">
+            <div class="detail-item">
+              <span class="label">Plato:</span>
+              <span class="value">{{ dishForm.get('name')?.value }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Precio:</span>
+              <span class="value">${{ dishForm.get('price')?.value | number }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Categoría:</span>
+              <span class="value">
+                {{ categoryOptions.find(c => c.id === dishForm.get('categoryId')?.value)?.icon }}
+                {{ categoryOptions.find(c => c.id === dishForm.get('categoryId')?.value)?.name }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Restaurante:</span>
+              <span class="value">
+                {{ restaurants().find(r => r.id === selectedRestaurantId())?.name }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn--secondary"
+            (click)="cancelConfirmation()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn--success"
+            (click)="submitDish()"
+            [disabled]="isSavingDish()"
+          >
+            {{ isSavingDish() ? 'Creando...' : 'Crear Plato' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- INSTRUCTIONS -->
+  <section class="instructions">
+    <h3>📖 Guía de Instrucciones</h3>
+    <ol class="instructions-list">
+      <li><strong>Haz clic en "Iniciar"</strong> para activar el micrófono</li>
+      <li><strong>Habla claramente</strong> diciendo: nombre del plato, precio y categoría</li>
+      <li><strong>Ejemplo de comando:</strong> <em>"Una hamburguesa clásica de veinte mil pesos en la categoría burgers"</em></li>
+      <li><strong>Espera al procesamiento</strong> - El IA extraerá los datos automáticamente</li>
+      <li><strong>Revisa los datos</strong> en el formulario y realiza cambios si es necesario</li>
+      <li><strong>Confirma la creación</strong> haciendo clic en "Confirmar y Crear"</li>
+    </ol>
+
+    <div class="tips" style="margin-top: 1.5rem; padding: 1rem; background-color: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; border-radius: 0.5rem; color: #86efac;">
+      <p style="margin: 0; font-size: 0.9rem;">
+        <strong>💡 Consejos:</strong> Asegúrate de que tu conexión a internet sea estable, 
+        otorga permiso de micrófono cuando se solicite, 
+        y habla en español para mejores resultados.
+      </p>
+    </div>
+  </section>
+</div>

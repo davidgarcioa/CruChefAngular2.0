@@ -1,0 +1,57 @@
+<app-auth-shell
+  eyebrow="Propietario"
+  title="Crea tu primer restaurante"
+  subtitle="Antes de entrar al panel de propietario, registra los datos legales y operativos de tu negocio."
+  alternateText="Quieres volver a escoger un perfil?"
+  alternateLabel="Cambiar rol"
+  alternateRoute="/select-role"
+>
+  <section class="setup-card">
+    <h2>Datos del restaurante</h2>
+    <p>Estos datos quedaran vinculados al correo con el que iniciaste sesion.</p>
+
+    @if (errorMessage()) {
+      <p class="status-message">{{ errorMessage() }}</p>
+    }
+
+    <form class="setup-form" [formGroup]="restaurantForm" (ngSubmit)="submit()">
+      <label class="field">
+        <span>Nombre del restaurante</span>
+        <input type="text" formControlName="name" placeholder="Ej. CruChef House" />
+      </label>
+
+      <label class="field">
+        <span>Direccion</span>
+        <input type="text" formControlName="address" placeholder="Ej. Carrera 10 # 20-30" />
+      </label>
+
+      <div class="field-grid">
+        <label class="field">
+          <span>Ciudad</span>
+          <input type="text" formControlName="city" placeholder="Ej. Bogota" />
+        </label>
+
+        <label class="field">
+          <span>Telefono</span>
+          <input type="text" formControlName="phone" placeholder="Ej. 3001234567" />
+        </label>
+      </div>
+
+      <div class="field-grid">
+        <label class="field">
+          <span>Horarios</span>
+          <input type="text" formControlName="schedule" placeholder="Lun-Dom 8:00 AM - 10:00 PM" />
+        </label>
+
+        <label class="field">
+          <span>RUT</span>
+          <input type="text" formControlName="rut" placeholder="Numero de RUT" />
+        </label>
+      </div>
+
+      <button type="submit" class="primary-button" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Creando...' : 'Crear mi primer restaurante' }}
+      </button>
+    </form>
+  </section>
+</app-auth-shell>

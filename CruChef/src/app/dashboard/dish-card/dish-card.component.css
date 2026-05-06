@@ -1,0 +1,108 @@
+﻿:host {
+  display: block;
+  height: 100%;
+  min-width: 0;
+}
+
+.dish-card {
+  position: relative;
+  display: grid;
+  align-items: end;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 13.4rem;
+  padding: 4.35rem 1rem 1rem;
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    #1e1e1e;
+  text-align: center;
+  overflow: visible;
+  animation: fadeSlideUp 520ms ease both;
+  animation-delay: calc(var(--delay) * 90ms);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.22);
+}
+
+.dish-body {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+
+.dish-image {
+  position: absolute;
+  top: -3.35rem;
+  left: 50%;
+  width: 8rem;
+  height: 8rem;
+  transform: translateX(-50%);
+  object-fit: contain;
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.35));
+}
+
+.dish-body h3 {
+  margin: 0;
+  min-height: 3.05rem;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.05;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.dish-price {
+  margin: 0.45rem 0 0;
+  color: #ffd166;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.dish-rating {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.16rem;
+  min-height: 1.2rem;
+  margin-top: 0.7rem;
+  color: #ffbe0b;
+}
+
+.dish-rating small {
+  margin-left: 0.18rem;
+  color: #bdbdbd;
+  font-size: 0.72rem;
+}
+
+.dish-rating--empty {
+  color: #8a8a8a;
+  font-size: 0.8rem;
+}
+
+.dish-restaurant {
+  margin: 0.55rem 0 0;
+  max-width: 100%;
+  min-height: 1.05rem;
+  color: #bdbdbd;
+  font-size: 0.78rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

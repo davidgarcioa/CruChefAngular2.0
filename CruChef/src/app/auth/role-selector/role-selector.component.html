@@ -1,0 +1,43 @@
+<app-auth-shell
+  eyebrow="Sesion iniciada"
+  title="Elige tu rol"
+  subtitle="Define si vas a entrar como usuario para explorar platos o como propietario para administrar tu catalogo."
+  alternateText="Quieres volver al acceso?"
+  alternateLabel="Ir al login"
+  alternateRoute="/login"
+>
+  <section class="role-card">
+    <div class="card-copy">
+      <h2>Como quieres continuar?</h2>
+      <p>La seleccion solo afecta esta sesion y puedes cambiarla luego desde el menu lateral.</p>
+    </div>
+
+    <div class="role-grid">
+      <button
+        type="button"
+        class="role-option"
+        [disabled]="isNavigating()"
+        (click)="chooseRole('user')"
+      >
+        <span class="material-symbols-outlined">person</span>
+        <strong>Usuario</strong>
+        <p>Explora platos disponibles y revisa desde que restaurante estas viendo el menu.</p>
+      </button>
+
+      <button
+        type="button"
+        class="role-option role-option--owner"
+        [disabled]="isNavigating()"
+        (click)="chooseRole('owner')"
+      >
+        <span class="material-symbols-outlined">storefront</span>
+        <strong>Propietario</strong>
+        <p>Administra platos, categorias y cambios del catalogo desde el panel principal.</p>
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="status-message">{{ errorMessage() }}</p>
+    }
+  </section>
+</app-auth-shell>

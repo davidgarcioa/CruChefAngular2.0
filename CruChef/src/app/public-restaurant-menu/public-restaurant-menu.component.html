@@ -1,0 +1,75 @@
+<main class="public-menu-shell">
+  @if (isLoading()) {
+    <section class="state-card">
+      <p class="eyebrow">CruChef</p>
+      <h1>Cargando menu...</h1>
+      <p>Estamos preparando los platos disponibles.</p>
+    </section>
+  } @else if (menuError()) {
+    <section class="state-card state-card--error">
+      <p class="eyebrow">Menu publico</p>
+      <h1>No pudimos abrir este menu</h1>
+      <p>{{ menuError() }}</p>
+    </section>
+  } @else if (restaurant()) {
+    <header class="restaurant-hero">
+      <div>
+        <p class="eyebrow">Menu publico</p>
+        <h1>{{ restaurant()!.name }}</h1>
+        <p>
+          {{ restaurant()!.city }}
+          @if (restaurant()!.address) {
+            <span>- {{ restaurant()!.address }}</span>
+          }
+        </p>
+      </div>
+
+      <div class="restaurant-meta">
+        @if (restaurant()!.schedule) {
+          <p>Horario: {{ restaurant()!.schedule }}</p>
+        }
+        @if (restaurant()!.phone) {
+          <p>Telefono: {{ restaurant()!.phone }}</p>
+        }
+      </div>
+    </header>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <h2>Categorias</h2>
+          <p><span>{{ filteredDishes().length }}</span> platos visibles.</p>
+        </div>
+      </div>
+
+      <app-category-slider
+        [categories]="categories"
+        [selectedCategoryId]="selectedCategoryId()"
+        (categoryChange)="selectedCategoryId.set($event)"
+      />
+    </section>
+
+    <section class="catalog-panel section-block">
+      <div class="section-heading">
+        <div>
+          <h2>Platos disponibles</h2>
+          <p><span>{{ dishes().length }}</span> platos publicados por el restaurante.</p>
+        </div>
+      </div>
+
+      @if (filteredDishes().length > 0) {
+        <div class="dish-row">
+          @for (dish of filteredDishes(); track dish.id; let index = $index) {
+            <app-dish-card [dish]="dish" [animationDelay]="index" />
+          }
+        </div>
+      } @else {
+        <div class="state-card state-card--compact">
+          <p class="eyebrow">Sin platos</p>
+          <h3>No hay platos para esta categoria.</h3>
+          <p>Prueba otra categoria del menu.</p>
+        </div>
+      }
+    </section>
+  }
+</main>

@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+
+.setup-card {
+  width: min(100%, 42rem);
+  padding: 1.8rem;
+  border-radius: 1.75rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.setup-card h2,
+.setup-card p {
+  margin: 0;
+}
+
+.setup-card h2 {
+  color: #ffffff;
+  font-size: 2rem;
+}
+
+.setup-card p {
+  margin-top: 0.7rem;
+  color: #b9b9b9;
+  line-height: 1.6;
+}
+
+.setup-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field span {
+  color: #ececec;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  outline: 0;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.status-message {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: rgba(230, 81, 81, 0.12);
+  color: #ffb0b0;
+}
+
+.primary-button {
+  border: 0;
+  border-radius: 1rem;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(135deg, #e65151, #b73d3d);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+@media (max-width: 920px) {
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+}
