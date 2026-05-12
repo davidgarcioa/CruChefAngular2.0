@@ -21,7 +21,15 @@
         <span>Nombre completo</span>
         <input type="text" formControlName="fullName" placeholder="Tu nombre" />
         @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
-          <small>Ingresa un nombre v&aacute;lido.</small>
+          @if (form.controls.fullName.hasError('required') || form.controls.fullName.hasError('trimmedRequired')) {
+            <small>El nombre completo es obligatorio.</small>
+          } @else if (form.controls.fullName.hasError('minlength')) {
+            <small>El nombre debe tener al menos 3 caracteres.</small>
+          } @else if (form.controls.fullName.hasError('maxlength')) {
+            <small>El nombre no puede superar 80 caracteres.</small>
+          } @else if (form.controls.fullName.hasError('pattern')) {
+            <small>Usa solo letras, espacios, puntos o guiones.</small>
+          }
         }
       </label>
 
@@ -29,7 +37,13 @@
         <span>Correo electr&oacute;nico</span>
         <input type="email" formControlName="email" placeholder="correo@cruchef.com" />
         @if (form.controls.email.touched && form.controls.email.invalid) {
-          <small>Ingresa un correo v&aacute;lido.</small>
+          @if (form.controls.email.hasError('required') || form.controls.email.hasError('trimmedRequired')) {
+            <small>El correo electr&oacute;nico es obligatorio.</small>
+          } @else if (form.controls.email.hasError('email')) {
+            <small>Ingresa un correo electr&oacute;nico v&aacute;lido.</small>
+          } @else if (form.controls.email.hasError('maxlength')) {
+            <small>El correo electr&oacute;nico es demasiado largo.</small>
+          }
         }
       </label>
 
@@ -37,7 +51,15 @@
         <span>N&uacute;mero de documento</span>
         <input type="text" formControlName="documentNumber" placeholder="Documento" />
         @if (form.controls.documentNumber.touched && form.controls.documentNumber.invalid) {
-          <small>Ingresa un n&uacute;mero de documento v&aacute;lido.</small>
+          @if (form.controls.documentNumber.hasError('required') || form.controls.documentNumber.hasError('trimmedRequired')) {
+            <small>El documento es obligatorio.</small>
+          } @else if (form.controls.documentNumber.hasError('minlength')) {
+            <small>El documento debe tener al menos 6 d&iacute;gitos.</small>
+          } @else if (form.controls.documentNumber.hasError('maxlength')) {
+            <small>El documento no puede superar 20 d&iacute;gitos.</small>
+          } @else if (form.controls.documentNumber.hasError('pattern')) {
+            <small>El documento solo puede contener n&uacute;meros.</small>
+          }
         }
       </label>
 
@@ -45,7 +67,13 @@
         <span>Contrase&ntilde;a</span>
         <input type="password" formControlName="password" placeholder="M&iacute;nimo 6 caracteres" />
         @if (form.controls.password.touched && form.controls.password.invalid) {
-          <small>La contrase&ntilde;a debe tener al menos 6 caracteres.</small>
+          @if (form.controls.password.hasError('required')) {
+            <small>La contrase&ntilde;a es obligatoria.</small>
+          } @else if (form.controls.password.hasError('minlength')) {
+            <small>La contrase&ntilde;a debe tener al menos 6 caracteres.</small>
+          } @else if (form.controls.password.hasError('maxlength')) {
+            <small>La contrase&ntilde;a no puede superar 64 caracteres.</small>
+          }
         }
       </label>
 
@@ -53,8 +81,12 @@
         <span>Confirmar contrase&ntilde;a</span>
         <input type="password" formControlName="confirmPassword" placeholder="Repite tu contrase&ntilde;a" />
         @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) {
-          <small>Confirma tu contrase&ntilde;a.</small>
-        } @else if (form.touched && form.hasError('passwordMismatch')) {
+          @if (form.controls.confirmPassword.hasError('required')) {
+            <small>Confirma tu contrase&ntilde;a.</small>
+          } @else if (form.controls.confirmPassword.hasError('maxlength')) {
+            <small>La confirmaci&oacute;n no puede superar 64 caracteres.</small>
+          }
+        } @else if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
           <small>Las contrase&ntilde;as no coinciden.</small>
         }
       </label>

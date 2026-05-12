@@ -102,11 +102,29 @@
               <label class="field">
                 <span>Nombre del plato</span>
                 <input type="text" formControlName="name" placeholder="Ej. Hamburguesa doble" />
+                @if (dishForm.controls.name.touched && dishForm.controls.name.invalid) {
+                  @if (dishForm.controls.name.hasError('required') || dishForm.controls.name.hasError('trimmedRequired')) {
+                    <small>El nombre del plato es obligatorio.</small>
+                  } @else if (dishForm.controls.name.hasError('minlength')) {
+                    <small>El nombre debe tener al menos 2 caracteres.</small>
+                  } @else if (dishForm.controls.name.hasError('maxlength')) {
+                    <small>El nombre no puede superar 80 caracteres.</small>
+                  }
+                }
               </label>
 
               <label class="field">
                 <span>Precio</span>
                 <input type="number" formControlName="price" min="1000" step="500" />
+                @if (dishForm.controls.price.touched && dishForm.controls.price.invalid) {
+                  @if (dishForm.controls.price.hasError('required')) {
+                    <small>El precio es obligatorio.</small>
+                  } @else if (dishForm.controls.price.hasError('min')) {
+                    <small>El precio minimo es 1000 COP.</small>
+                  } @else if (dishForm.controls.price.hasError('max')) {
+                    <small>El precio no puede superar 1000000 COP.</small>
+                  }
+                }
               </label>
 
               <label class="field">
@@ -116,6 +134,9 @@
                     <option [value]="category.id">{{ category.name }}</option>
                   }
                 </select>
+                @if (dishForm.controls.categoryId.touched && dishForm.controls.categoryId.hasError('required')) {
+                  <small>Selecciona una categoria para el plato.</small>
+                }
               </label>
 
               <p class="owner-note">
@@ -152,6 +173,81 @@
               <p>
                 El CRUD de platos quedara anidado en Firebase bajo el restaurante que tengas activo.
               </p>
+            </div>
+          }
+        </section>
+
+        <section class="qr-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>QR del Restaurante</h2>
+              <p>
+                @if (selectedRestaurant()) {
+                  <span>Código QR para {{ selectedRestaurant()!.name }}</span>
+                } @else {
+                  <span>Selecciona un restaurante</span> para generar su código QR.
+                }
+              </p>
+            </div>
+          </div>
+
+          @if (selectedRestaurant()) {
+            <div class="qr-container">
+              @if (qrError()) {
+                <p class="status-message status-message--error">{{ qrError() }}</p>
+              }
+
+              @if (qrDataUrl()) {
+                <div class="qr-content">
+                  <div class="qr-image-wrapper">
+                    <img class="qr-image" [src]="qrDataUrl()" [alt]="'QR de ' + selectedRestaurant()!.name" />
+                  </div>
+
+                  <div class="qr-details">
+                    <p class="qr-url-label">URL pública del menú:</p>
+                    <a class="qr-url-link" [href]="qrPublicUrl()" target="_blank" rel="noopener">
+                      {{ qrPublicUrl() }}
+                    </a>
+
+                    <div class="qr-actions">
+                      <button
+                        type="button"
+                        class="primary-button"
+                        (click)="generateRestaurantQr(selectedRestaurant()!)"
+                        [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
+                      >
+                        {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Regenerar QR' }}
+                      </button>
+
+                      <a
+                        class="secondary-button"
+                        [download]="'qr-' + selectedRestaurant()!.name + '.png'"
+                        [href]="qrDataUrl()"
+                        role="button"
+                      >
+                        Descargar PNG
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="qr-empty">
+                  <p>No hay QR generado aún. Haz click en el botón para crear uno.</p>
+                  <button
+                    type="button"
+                    class="primary-button"
+                    (click)="generateRestaurantQr(selectedRestaurant()!)"
+                    [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
+                  >
+                    {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Generar QR' }}
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-card">
+              <h3>Sin restaurante activo</h3>
+              <p>Selecciona un restaurante para generar su código QR.</p>
             </div>
           }
         </section>
@@ -576,4 +672,3 @@
     }
   </section>
 </main>
-

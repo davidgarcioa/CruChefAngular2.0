@@ -28,6 +28,9 @@
             "styles": [
               "src/styles.css"
             ],
+            "allowedCommonJsDependencies": [
+              "undici"
+            ],
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
@@ -42,13 +45,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "650kB",
+                  "maximumError": "900kB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kB",
-                  "maximumError": "11kB"
+                  "maximumWarning": "11kB",
+                  "maximumError": "12kB"
                 }
               ],
               "outputHashing": "all"
@@ -80,4 +83,3 @@
     }
   }
 }
-

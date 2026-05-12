@@ -8,6 +8,7 @@ import { roleGuard } from './auth/role.guard';
 import { RoleSelectorComponent } from './auth/role-selector/role-selector.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { UserMenuComponent } from './user-menu/user-menu.component';
+import { PublicRestaurantMenuComponent } from './user-menu/public-restaurant-menu.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -67,6 +68,10 @@ export const routes: Routes = [
     component: DashboardComponent,
     canActivate: [authGuard, roleGuard],
     data: { view: 'ai', role: 'owner' },
+  },
+  {
+    path: 'public/menu/:ownerUid/:restaurantId',
+    component: PublicRestaurantMenuComponent,
   },
   { path: '**', redirectTo: 'login' },
 ];

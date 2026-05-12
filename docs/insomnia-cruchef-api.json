@@ -1,0 +1,339 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-07T15:45:00.000Z",
+  "__export_source": "codex.local",
+  "resources": [
+    {
+      "_id": "wrk_cruchef_api",
+      "_type": "workspace",
+      "name": "CruChef API",
+      "description": "Coleccion para probar endpoints Node y Python de CruChef.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_cruchef_api_base",
+      "_type": "environment",
+      "parentId": "wrk_cruchef_api",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000/api",
+        "python_url": "http://localhost:8000",
+        "firebase_api_key": "AIzaSyDyURnZJ6DEFHW04R8lJvDIY9drPK8is6c",
+        "email": "tu_correo@gmail.com",
+        "password": "tu_password",
+        "id_token": "",
+        "owner_uid": "i2QDLqoWnfhpjrhT1LhGx5W0XbB3",
+        "restaurant_id": "aBeIdkoWt8JxmJxIA0QY",
+        "dish_id": "",
+        "temp_restaurant_id": "",
+        "temp_dish_id": ""
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api",
+      "name": "1. Auth"
+    },
+    {
+      "_id": "fld_node_public",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api",
+      "name": "2. Node Public"
+    },
+    {
+      "_id": "fld_node_owner",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api",
+      "name": "3. Node Owner"
+    },
+    {
+      "_id": "fld_node_orders",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api",
+      "name": "4. Node Orders"
+    },
+    {
+      "_id": "fld_python",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api",
+      "name": "5. Python IA"
+    },
+    {
+      "_id": "req_signin_password",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Firebase Sign In With Password",
+      "method": "POST",
+      "url": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={{ firebase_api_key }}",
+      "description": "Usa este request para obtener un idToken. Copia el campo idToken del response al environment variable id_token.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ email }}\",\n  \"password\": \"{{ password }}\",\n  \"returnSecureToken\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "_id": "req_node_health",
+      "_type": "request",
+      "parentId": "fld_node_public",
+      "name": "GET Health",
+      "method": "GET",
+      "url": "{{ base_url }}/health",
+      "description": "Health check del backend Node.",
+      "headers": []
+    },
+    {
+      "_id": "req_public_restaurants",
+      "_type": "request",
+      "parentId": "fld_node_public",
+      "name": "GET Public Restaurants",
+      "method": "GET",
+      "url": "{{ base_url }}/public/restaurants",
+      "description": "Lista publica de restaurantes.",
+      "headers": []
+    },
+    {
+      "_id": "req_public_dishes",
+      "_type": "request",
+      "parentId": "fld_node_public",
+      "name": "GET Public Dishes By Restaurant",
+      "method": "GET",
+      "url": "{{ base_url }}/public/restaurants/{{ owner_uid }}/{{ restaurant_id }}/dishes",
+      "description": "Lista publica de platos del restaurante configurado en el environment.",
+      "headers": []
+    },
+    {
+      "_id": "req_owner_restaurants_no_token",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "GET Owner Restaurants Without Token",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants",
+      "description": "Debe responder 401 para evidenciar proteccion.",
+      "headers": []
+    },
+    {
+      "_id": "req_owner_restaurants",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "GET Owner Restaurants",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants",
+      "description": "Lista restaurantes del owner autenticado.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_create_restaurant",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "POST Create Restaurant",
+      "method": "POST",
+      "url": "{{ base_url }}/owner/restaurants",
+      "description": "Crea un restaurante. Copia el id del response en temp_restaurant_id.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Restaurante Insomnia Demo\",\n  \"address\": \"Calle 10 # 20-30\",\n  \"city\": \"Bogota\",\n  \"phone\": \"3001234567\",\n  \"schedule\": \"Lun - Vie 8:00 - 18:00\",\n  \"rut\": \"900123456-7\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_update_restaurant",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "PUT Update Restaurant",
+      "method": "PUT",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}",
+      "description": "Actualiza el restaurante temporal creado antes.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Restaurante Insomnia Demo\",\n  \"address\": \"Calle 10 # 20-30\",\n  \"city\": \"Bogota\",\n  \"phone\": \"3001234567\",\n  \"schedule\": \"Lun - Sab 8:00 - 20:00\",\n  \"rut\": \"900123456-7\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_owner_dishes",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "GET Owner Dishes",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes",
+      "description": "Lista platos del restaurante temporal.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_create_dish",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "POST Create Dish",
+      "method": "POST",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes",
+      "description": "Crea un plato. Copia el id del response en temp_dish_id.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plato Insomnia Demo\",\n  \"price\": 25500,\n  \"categoryId\": \"pizza\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_update_dish",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "PUT Update Dish",
+      "method": "PUT",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes/{{ temp_dish_id }}",
+      "description": "Actualiza el plato temporal.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plato Insomnia Demo Editado\",\n  \"price\": 26500,\n  \"categoryId\": \"tacos\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_delete_dish",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "DELETE Dish",
+      "method": "DELETE",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes/{{ temp_dish_id }}",
+      "description": "Elimina el plato temporal.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_delete_restaurant",
+      "_type": "request",
+      "parentId": "fld_node_owner",
+      "name": "DELETE Restaurant",
+      "method": "DELETE",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}",
+      "description": "Elimina el restaurante temporal.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_orders_by_owner",
+      "_type": "request",
+      "parentId": "fld_node_orders",
+      "name": "GET Orders By Owner",
+      "method": "GET",
+      "url": "{{ base_url }}/orders?ownerUid={{ owner_uid }}",
+      "description": "Lista pedidos por ownerUid.",
+      "headers": []
+    },
+    {
+      "_id": "req_orders_by_customer",
+      "_type": "request",
+      "parentId": "fld_node_orders",
+      "name": "GET Orders By Customer",
+      "method": "GET",
+      "url": "{{ base_url }}/orders?customerUid={{ owner_uid }}",
+      "description": "Lista pedidos por customerUid. Cambia el UID si deseas otro usuario.",
+      "headers": []
+    },
+    {
+      "_id": "req_python_health",
+      "_type": "request",
+      "parentId": "fld_python",
+      "name": "GET Python Health",
+      "method": "GET",
+      "url": "{{ python_url }}/health",
+      "description": "Health check del backend Python.",
+      "headers": []
+    },
+    {
+      "_id": "req_python_transcribe_only_no_file",
+      "_type": "request",
+      "parentId": "fld_python",
+      "name": "POST Transcribe Only Without File",
+      "method": "POST",
+      "url": "{{ python_url }}/transcribe-only",
+      "description": "Prueba negativa. Debe responder 400 cuando no envias archivo.",
+      "headers": []
+    },
+    {
+      "_id": "req_python_transcribe_and_create",
+      "_type": "request",
+      "parentId": "fld_python",
+      "name": "POST Transcribe And Create",
+      "method": "POST",
+      "url": "{{ python_url }}/transcribe-and-create",
+      "description": "Multipart form-data. Este endpoint ahora solo interpreta el audio y devuelve una sugerencia; la creacion real del plato la hace la API Node.",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "file",
+            "type": "file",
+            "fileName": ""
+          },
+          {
+            "name": "restaurant_id",
+            "value": "{{ restaurant_id }}"
+          }
+        ]
+      },
+      "headers": []
+    }
+  ]
+}

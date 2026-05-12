@@ -55,6 +55,16 @@
   outline: 0;
 }
 
+.field input.ng-invalid.ng-touched {
+  border-color: rgba(230, 81, 81, 0.72);
+  box-shadow: 0 0 0 3px rgba(230, 81, 81, 0.12);
+}
+
+.field small {
+  color: #ff9c9c;
+  font-size: 0.82rem;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

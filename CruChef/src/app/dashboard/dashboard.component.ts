@@ -1,9 +1,10 @@
-import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, DestroyRef, computed, inject, signal, PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
+import { toDataURL } from 'qrcode';
 
 import { OrderService } from '../orders/order.service';
 import {
@@ -22,15 +23,11 @@ import { DishCardComponent } from './dish-card/dish-card.component';
 import { DishFormValue, OwnerService } from './owner.service';
 import { SearchBarComponent } from './search-bar/search-bar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
-
-interface DashboardOrderAlert {
-  id: string;
-  tone: 'info' | 'success' | 'warning';
-  title: string;
-  detail: string;
-  orderId: string;
-  createdAt: number;
-}
+import {
+  formMaxLengths,
+  normalizeTextInput,
+  trimmedRequired,
+} from '../shared/form-validators';
 
 @Component({
   selector: 'app-dashboard',
@@ -53,8 +50,7 @@ export class DashboardComponent {
   private readonly ownerService = inject(OwnerService);
   private readonly orderService = inject(OrderService);
   private readonly destroyRef = inject(DestroyRef);
-  private previousOwnerOrderStatuses = new Map<string, OrderStatus>();
-  private ownerAlertSequence = 0;
+  private readonly platformId = inject(PLATFORM_ID);
 
   readonly navigationItems = ownerNavigationItems;
   readonly categories = categories;
@@ -73,14 +69,27 @@ export class DashboardComponent {
   readonly dishSuccess = signal('');
   readonly ownerOrderError = signal('');
   readonly ownerOrderSuccess = signal('');
-  readonly ownerAlerts = signal<DashboardOrderAlert[]>([]);
   readonly currentView = signal(
     (this.route.snapshot.data['view'] as string | undefined) ?? 'restaurants',
   );
 
+  readonly qrDataUrl = signal('');
+  readonly qrPublicUrl = signal('');
+  readonly qrRestaurantId = signal<string | null>(null);
+  readonly qrError = signal('');
+  readonly generatingQrRestaurantId = signal<string | null>(null);
+
   readonly dishForm = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    price: [24000, [Validators.required, Validators.min(1000)]],
+    name: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(2),
+        Validators.maxLength(formMaxLengths.dishName),
+      ],
+    ],
+    price: [24000, [Validators.required, Validators.min(1000), Validators.max(1000000)]],
     categoryId: ['burgers', Validators.required],
   });
 
@@ -269,7 +278,6 @@ export class DashboardComponent {
       )
       .subscribe({
         next: (orders) => {
-          this.syncOwnerOrderAlerts(orders);
           this.ownerOrders.set(orders);
           this.ownerOrderError.set('');
         },
@@ -307,7 +315,10 @@ export class DashboardComponent {
     this.dishError.set('');
     this.dishSuccess.set('');
 
-    const payload = this.dishForm.getRawValue() as DishFormValue;
+    const payload = {
+      ...this.dishForm.getRawValue(),
+      name: normalizeTextInput(this.dishForm.controls.name.value),
+    } as DishFormValue;
 
     try {
       if (this.editingDishId()) {
@@ -399,10 +410,6 @@ export class DashboardComponent {
     }
   }
 
-  dismissOwnerAlert(alertId: string): void {
-    this.ownerAlerts.update((alerts) => alerts.filter((alert) => alert.id !== alertId));
-  }
-
   getOrderStatusLabel(status: OrderStatus): string {
     return orderStatusLabelMap[status];
   }
@@ -426,48 +433,6 @@ export class DashboardComponent {
     }
   }
 
-  private syncOwnerOrderAlerts(orders: Order[]): void {
-    const nextStatuses = new Map<string, OrderStatus>();
-
-    orders.forEach((order) => {
-      nextStatuses.set(order.id, order.status);
-      const previousStatus = this.previousOwnerOrderStatuses.get(order.id);
-
-      if (!previousStatus) {
-        if (order.status === 'pending') {
-          this.pushOwnerAlert({
-            tone: 'info',
-            title: 'Nuevo pedido recibido',
-            detail: order.customerName + ' pidio ' + order.dishName + ' en ' + order.restaurantName + '.',
-            orderId: order.id,
-          });
-        }
-        return;
-      }
-
-      if (previousStatus !== order.status && order.status === 'cancelled') {
-        this.pushOwnerAlert({
-          tone: 'warning',
-          title: 'Pedido cancelado',
-          detail: 'El pedido de ' + order.customerName + ' para ' + order.dishName + ' fue cancelado.',
-          orderId: order.id,
-        });
-      }
-    });
-
-    this.previousOwnerOrderStatuses = nextStatuses;
-  }
-
-  private pushOwnerAlert(alert: Omit<DashboardOrderAlert, 'id' | 'createdAt'>): void {
-    const nextAlert: DashboardOrderAlert = {
-      ...alert,
-      id: 'owner-alert-' + ++this.ownerAlertSequence,
-      createdAt: Date.now(),
-    };
-
-    this.ownerAlerts.update((alerts) => [nextAlert, ...alerts].slice(0, 5));
-  }
-
   private filterOrdersByRestaurant(orders: Order[]): Order[] {
     const restaurantId = this.selectedOrderRestaurantId();
 
@@ -477,7 +442,41 @@ export class DashboardComponent {
 
     return orders.filter((order) => order.restaurantId === restaurantId);
   }
+
+  async generateRestaurantQr(restaurant: Restaurant): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      this.qrError.set('El QR solo se puede generar desde el navegador.');
+      return;
+    }
+
+    this.generatingQrRestaurantId.set(restaurant.id);
+    this.qrError.set('');
+
+    const publicUrl = this.getPublicMenuUrl(restaurant);
+
+    try {
+      const qrDataUrl = await toDataURL(publicUrl, {
+        width: 300,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#121212',
+          light: '#ffffff',
+        },
+      });
+
+      this.qrRestaurantId.set(restaurant.id);
+      this.qrPublicUrl.set(publicUrl);
+      this.qrDataUrl.set(qrDataUrl);
+    } catch (error) {
+      this.qrError.set('No se pudo generar el QR de este restaurante.');
+    } finally {
+      this.generatingQrRestaurantId.set(null);
+    }
+  }
+
+  getPublicMenuUrl(restaurant: Restaurant): string {
+    const origin = window.location.origin;
+    return `${origin}/public/menu/${encodeURIComponent(restaurant.ownerUid)}/${encodeURIComponent(restaurant.id)}`;
+  }
 }
-
-
-

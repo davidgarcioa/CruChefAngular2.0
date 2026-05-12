@@ -29,7 +29,13 @@
         <span>Correo electr&oacute;nico</span>
         <input type="email" formControlName="email" placeholder="correo@cruchef.com" />
         @if (form.controls.email.touched && form.controls.email.invalid) {
-          <small>Ingresa un correo v&aacute;lido.</small>
+          @if (form.controls.email.hasError('required') || form.controls.email.hasError('trimmedRequired')) {
+            <small>El correo electr&oacute;nico es obligatorio.</small>
+          } @else if (form.controls.email.hasError('email')) {
+            <small>Ingresa un correo electr&oacute;nico v&aacute;lido.</small>
+          } @else if (form.controls.email.hasError('maxlength')) {
+            <small>El correo electr&oacute;nico es demasiado largo.</small>
+          }
         }
       </label>
 
@@ -37,7 +43,13 @@
         <span>Contrase&ntilde;a</span>
         <input type="password" formControlName="password" placeholder="M&iacute;nimo 6 caracteres" />
         @if (form.controls.password.touched && form.controls.password.invalid) {
-          <small>La contrase&ntilde;a debe tener al menos 6 caracteres.</small>
+          @if (form.controls.password.hasError('required')) {
+            <small>La contrase&ntilde;a es obligatoria.</small>
+          } @else if (form.controls.password.hasError('minlength')) {
+            <small>La contrase&ntilde;a debe tener al menos 6 caracteres.</small>
+          } @else if (form.controls.password.hasError('maxlength')) {
+            <small>La contrase&ntilde;a no puede superar 64 caracteres.</small>
+          }
         }
       </label>
 

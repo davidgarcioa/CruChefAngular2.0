@@ -11,6 +11,13 @@ import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../auth.service';
 import { AuthShellComponent } from '../auth-shell/auth-shell.component';
+import {
+  formMaxLengths,
+  formPatterns,
+  normalizeEmailInput,
+  normalizeTextInput,
+  trimmedRequired,
+} from '../../shared/form-validators';
 
 const passwordMatchValidator = (
   control: AbstractControl,
@@ -43,11 +50,44 @@ export class RegisterComponent {
 
   readonly form = this.fb.nonNullable.group(
     {
-      fullName: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
-      documentNumber: ['', [Validators.required, Validators.minLength(6)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]],
+      fullName: [
+        '',
+        [
+          Validators.required,
+          trimmedRequired,
+          Validators.minLength(3),
+          Validators.maxLength(formMaxLengths.fullName),
+          Validators.pattern(formPatterns.fullName),
+        ],
+      ],
+      email: [
+        '',
+        [
+          Validators.required,
+          trimmedRequired,
+          Validators.email,
+          Validators.maxLength(formMaxLengths.email),
+        ],
+      ],
+      documentNumber: [
+        '',
+        [
+          Validators.required,
+          trimmedRequired,
+          Validators.minLength(6),
+          Validators.maxLength(formMaxLengths.documentNumber),
+          Validators.pattern(formPatterns.digitsOnly),
+        ],
+      ],
+      password: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(6),
+          Validators.maxLength(formMaxLengths.password),
+        ],
+      ],
+      confirmPassword: ['', [Validators.required, Validators.maxLength(formMaxLengths.password)]],
     },
     { validators: passwordMatchValidator },
   );
@@ -65,15 +105,15 @@ export class RegisterComponent {
     try {
       const { fullName, email, documentNumber, password } = this.form.getRawValue();
       const result = await this.authService.register({
-        fullName,
-        email,
-        documentNumber,
+        fullName: normalizeTextInput(fullName),
+        email: normalizeEmailInput(email),
+        documentNumber: documentNumber.trim(),
         password,
       });
 
       if (!result.profileSaved) {
         this.warningMessage.set(
-          'La cuenta se creo en Authentication, pero no se pudo guardar el perfil en Firestore.',
+          'La cuenta se creo en Authentication, pero no se pudo sincronizar el perfil en el backend.',
         );
       }
 

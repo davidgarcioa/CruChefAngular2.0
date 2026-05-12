@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthShellComponent } from '../auth-shell/auth-shell.component';
 import { AuthService } from '../auth.service';
 import { RoleService } from '../role.service';
+import { formMaxLengths, normalizeEmailInput, trimmedRequired } from '../../shared/form-validators';
 
 @Component({
   selector: 'app-login',
@@ -27,14 +28,29 @@ export class LoginComponent {
     this.route.snapshot.queryParamMap.get('notice') === 'verify-email'
       ? 'Revisa tu correo y confirma tu cuenta antes de iniciar sesion.'
       : this.route.snapshot.queryParamMap.get('notice') === 'verify-email-profile-warning'
-        ? 'La cuenta se creo y el correo fue enviado, pero el perfil no se guardo en Firestore.'
+        ? 'La cuenta se creo y el correo fue enviado, pero el perfil no se pudo sincronizar en el backend.'
         : '',
   );
   readonly warningMessage = signal('');
 
   readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    email: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.email,
+        Validators.maxLength(formMaxLengths.email),
+      ],
+    ],
+    password: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(6),
+        Validators.maxLength(formMaxLengths.password),
+      ],
+    ],
   });
 
   async submit(): Promise<void> {
@@ -50,11 +66,11 @@ export class LoginComponent {
 
     try {
       const { email, password } = this.form.getRawValue();
-      const result = await this.authService.login(email, password);
+      const result = await this.authService.login(normalizeEmailInput(email), password);
 
       if (!result.profileSaved) {
         this.warningMessage.set(
-          'Iniciaste sesion, pero Firestore rechazo la escritura del perfil. Revisa reglas o configuracion.',
+          'Iniciaste sesion, pero el perfil no se pudo sincronizar en el backend. Revisa la configuracion del servidor.',
         );
       }
 

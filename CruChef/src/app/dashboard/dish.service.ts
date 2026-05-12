@@ -74,11 +74,11 @@ export class DishService {
       }
 
       if (error.status === 404) {
-        return message || 'El plato ya no existe en Firebase.';
+        return message || 'El plato ya no existe.';
       }
 
       if (error.status >= 500) {
-        return message || 'El backend no pudo guardar el plato en Firebase.';
+        return message || 'El backend no pudo guardar el plato.';
       }
 
       return message || 'No se pudo guardar el plato.';

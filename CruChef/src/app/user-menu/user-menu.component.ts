@@ -20,15 +20,7 @@ import { DishCardComponent } from '../dashboard/dish-card/dish-card.component';
 import { SidebarComponent } from '../dashboard/sidebar/sidebar.component';
 import { categories, userNavigationItems } from '../dashboard/dashboard.data';
 import { PublicMenuService } from './public-menu.service';
-
-interface UserOrderAlert {
-  id: string;
-  tone: 'info' | 'success' | 'warning';
-  title: string;
-  detail: string;
-  orderId: string;
-  createdAt: number;
-}
+import { formMaxLengths } from '../shared/form-validators';
 
 @Component({
   selector: 'app-user-menu',
@@ -49,8 +41,6 @@ export class UserMenuComponent {
   private readonly orderService = inject(OrderService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
-  private previousUserOrderStatuses = new Map<string, OrderStatus>();
-  private userAlertSequence = 0;
 
   readonly navigationItems = userNavigationItems;
   readonly categories = categories;
@@ -64,7 +54,6 @@ export class UserMenuComponent {
   readonly ordersError = signal('');
   readonly orderSuccess = signal('');
   readonly orderActionError = signal('');
-  readonly userAlerts = signal<UserOrderAlert[]>([]);
   readonly ratingSuccess = signal('');
   readonly ratingError = signal('');
   readonly isSubmittingOrder = signal(false);
@@ -77,12 +66,12 @@ export class UserMenuComponent {
 
   readonly orderForm = this.fb.nonNullable.group({
     quantity: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
-    notes: [''],
+    notes: ['', [Validators.maxLength(formMaxLengths.notes)]],
   });
 
   readonly ratingForm = this.fb.nonNullable.group({
     rating: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
-    reviewText: [''],
+    reviewText: ['', [Validators.maxLength(formMaxLengths.reviewText)]],
   });
 
   readonly currentRestaurant = computed(
@@ -224,7 +213,6 @@ export class UserMenuComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (orders) => {
-          this.syncUserOrderAlerts(orders);
           this.ordersError.set('');
           this.userOrders.set(orders);
 
@@ -333,10 +321,6 @@ export class UserMenuComponent {
     }
   }
 
-  dismissUserAlert(alertId: string): void {
-    this.userAlerts.update((alerts) => alerts.filter((alert) => alert.id !== alertId));
-  }
-
   getRestaurantKey(restaurant: Restaurant): string {
     return `${restaurant.ownerUid}:${restaurant.id}`;
   }
@@ -352,55 +336,4 @@ export class UserMenuComponent {
   canRateOrder(order: Order): boolean {
     return order.status === 'delivered' && order.rating == null;
   }
-
-  private syncUserOrderAlerts(orders: Order[]): void {
-    const nextStatuses = new Map<string, OrderStatus>();
-
-    orders.forEach((order) => {
-      nextStatuses.set(order.id, order.status);
-      const previousStatus = this.previousUserOrderStatuses.get(order.id);
-
-      if (!previousStatus) {
-        if (order.status === 'pending') {
-          this.pushUserAlert({
-            tone: 'info',
-            title: 'Pedido enviado',
-            detail: order.dishName + ' fue enviado a ' + order.restaurantName + '.',
-            orderId: order.id,
-          });
-        }
-        return;
-      }
-
-      if (previousStatus === order.status) {
-        return;
-      }
-
-      const alertByStatus: Record<OrderStatus, Omit<UserOrderAlert, 'id' | 'createdAt'>> = {
-        pending: { tone: 'info', title: 'Pedido en espera', detail: 'Tu pedido de ' + order.dishName + ' sigue pendiente.', orderId: order.id },
-        accepted: { tone: 'success', title: 'Pedido confirmado', detail: order.restaurantName + ' acepto tu pedido de ' + order.dishName + '.', orderId: order.id },
-        preparing: { tone: 'info', title: 'Pedido en preparacion', detail: order.restaurantName + ' ya esta preparando ' + order.dishName + '.', orderId: order.id },
-        ready: { tone: 'info', title: 'Pedido listo', detail: order.dishName + ' ya esta listo para entrega.', orderId: order.id },
-        delivered: { tone: 'success', title: 'Pedido entregado', detail: 'Tu pedido de ' + order.dishName + ' fue entregado.', orderId: order.id },
-        cancelled: { tone: 'warning', title: 'Pedido cancelado', detail: order.restaurantName + ' confirmo la cancelacion de ' + order.dishName + '.', orderId: order.id },
-      };
-
-      this.pushUserAlert(alertByStatus[order.status]);
-    });
-
-    this.previousUserOrderStatuses = nextStatuses;
-  }
-
-  private pushUserAlert(alert: Omit<UserOrderAlert, 'id' | 'createdAt'>): void {
-    const nextAlert: UserOrderAlert = {
-      ...alert,
-      id: 'user-alert-' + ++this.userAlertSequence,
-      createdAt: Date.now(),
-    };
-
-    this.userAlerts.update((alerts) => [nextAlert, ...alerts].slice(0, 6));
-  }
 }
-
-
-

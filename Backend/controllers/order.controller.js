@@ -1,4 +1,65 @@
-﻿const orderService = require('../services/order.service');
+const orderService = require('../services/order.service');
+
+const validationMessages = new Set([
+  'La orden requiere un restaurante valido.',
+  'La orden requiere un cliente valido.',
+  'La orden requiere un plato valido.',
+  'La cantidad debe estar entre 1 y 10.',
+  'El precio unitario no es valido.',
+  'El estado de la orden no es valido.',
+  'La calificacion debe estar entre 1 y 5.',
+  'Solo se pueden calificar ordenes entregadas.',
+  'La orden ya fue calificada.',
+]);
+
+function normalizeControllerError(error, fallbackMessage) {
+  if (!(error instanceof Error)) {
+    return {
+      status: 500,
+      message: fallbackMessage,
+    };
+  }
+
+  const rawMessage = error.message || fallbackMessage;
+  const lowerMessage = rawMessage.toLowerCase();
+  const code = typeof error.code === 'number' || typeof error.code === 'string' ? String(error.code) : '';
+
+  if (
+    code === '16' ||
+    lowerMessage.includes('unauthenticated') ||
+    lowerMessage.includes('invalid authentication credentials')
+  ) {
+    return {
+      status: 500,
+      message:
+        'Firebase Admin no pudo autenticarse con Firestore. Reemplaza Backend/firebase-key.json por una clave nueva y valida del proyecto cruchefangular.',
+    };
+  }
+
+  if (
+    code === '7' ||
+    lowerMessage.includes('permission_denied') ||
+    lowerMessage.includes('permission denied')
+  ) {
+    return {
+      status: 500,
+      message:
+        'La cuenta de servicio de Firebase no tiene permisos suficientes sobre Firestore. Revisa IAM o genera una clave nueva del proyecto correcto.',
+    };
+  }
+
+  if (validationMessages.has(rawMessage)) {
+    return {
+      status: 400,
+      message: rawMessage,
+    };
+  }
+
+  return {
+    status: 500,
+    message: rawMessage,
+  };
+}
 
 async function getOrders(req, res) {
   try {
@@ -9,8 +70,11 @@ async function getOrders(req, res) {
     });
     res.json(orders);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error desconocido.';
-    res.status(500).json({ message: `No se pudieron cargar las ordenes: ${message}` });
+    const resolved = normalizeControllerError(
+      error,
+      'No se pudieron cargar las ordenes.',
+    );
+    res.status(resolved.status).json({ message: `No se pudieron cargar las ordenes: ${resolved.message}` });
   }
 }
 
@@ -19,9 +83,8 @@ async function postOrder(req, res) {
     const createdOrder = await orderService.createOrder(req.body);
     res.status(201).json(createdOrder);
   } catch (error) {
-    const status = error instanceof Error ? 400 : 500;
-    const message = error instanceof Error ? error.message : 'No se pudo crear la orden.';
-    res.status(status).json({ message });
+    const resolved = normalizeControllerError(error, 'No se pudo crear la orden.');
+    res.status(resolved.status).json({ message: resolved.message });
   }
 }
 
@@ -35,9 +98,8 @@ async function patchOrderStatus(req, res) {
 
     return res.json(updatedOrder);
   } catch (error) {
-    const status = error instanceof Error ? 400 : 500;
-    const message = error instanceof Error ? error.message : 'No se pudo actualizar la orden.';
-    return res.status(status).json({ message });
+    const resolved = normalizeControllerError(error, 'No se pudo actualizar la orden.');
+    return res.status(resolved.status).json({ message: resolved.message });
   }
 }
 
@@ -51,9 +113,8 @@ async function patchOrderRating(req, res) {
 
     return res.json(updatedOrder);
   } catch (error) {
-    const status = error instanceof Error ? 400 : 500;
-    const message = error instanceof Error ? error.message : 'No se pudo calificar la orden.';
-    return res.status(status).json({ message });
+    const resolved = normalizeControllerError(error, 'No se pudo calificar la orden.');
+    return res.status(resolved.status).json({ message: resolved.message });
   }
 }
 

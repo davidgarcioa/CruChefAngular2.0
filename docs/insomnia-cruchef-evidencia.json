@@ -1,0 +1,280 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-07T16:00:00.000Z",
+  "__export_source": "codex.local",
+  "resources": [
+    {
+      "_id": "wrk_cruchef_api_evidencia",
+      "_type": "workspace",
+      "name": "CruChef API - Evidencia",
+      "description": "Coleccion de Insomnia organizada para sacar capturas de evidencia.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_cruchef_api_evidencia",
+      "_type": "environment",
+      "parentId": "wrk_cruchef_api_evidencia",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000/api",
+        "python_url": "http://localhost:8000",
+        "firebase_api_key": "AIzaSyDyURnZJ6DEFHW04R8lJvDIY9drPK8is6c",
+        "email": "tu_correo@gmail.com",
+        "password": "tu_password",
+        "id_token": "",
+        "owner_uid": "i2QDLqoWnfhpjrhT1LhGx5W0XbB3",
+        "restaurant_id": "aBeIdkoWt8JxmJxIA0QY",
+        "temp_restaurant_id": "",
+        "temp_dish_id": ""
+      }
+    },
+    {
+      "_id": "fld_ev_auth",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api_evidencia",
+      "name": "0. Preparacion"
+    },
+    {
+      "_id": "fld_ev_public",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api_evidencia",
+      "name": "1. Evidencia Node Public"
+    },
+    {
+      "_id": "fld_ev_owner",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api_evidencia",
+      "name": "2. Evidencia Node Owner"
+    },
+    {
+      "_id": "fld_ev_python",
+      "_type": "request_group",
+      "parentId": "wrk_cruchef_api_evidencia",
+      "name": "3. Evidencia Python"
+    },
+    {
+      "_id": "req_ev_signin",
+      "_type": "request",
+      "parentId": "fld_ev_auth",
+      "name": "Paso 01 - Obtener id_token",
+      "method": "POST",
+      "url": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={{ firebase_api_key }}",
+      "description": "Ejecuta este request, luego copia el campo idToken del response y pegalo en la variable id_token del environment.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ email }}\",\n  \"password\": \"{{ password }}\",\n  \"returnSecureToken\": true\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_01_health",
+      "_type": "request",
+      "parentId": "fld_ev_public",
+      "name": "Evidencia 01 - GET Health 200",
+      "method": "GET",
+      "url": "{{ base_url }}/health",
+      "description": "Captura sugerida: status 200 y body con ok=true.",
+      "headers": []
+    },
+    {
+      "_id": "req_ev_02_public_restaurants",
+      "_type": "request",
+      "parentId": "fld_ev_public",
+      "name": "Evidencia 02 - GET Public Restaurants 200",
+      "method": "GET",
+      "url": "{{ base_url }}/public/restaurants",
+      "description": "Captura sugerida: lista publica de restaurantes.",
+      "headers": []
+    },
+    {
+      "_id": "req_ev_03_public_dishes",
+      "_type": "request",
+      "parentId": "fld_ev_public",
+      "name": "Evidencia 03 - GET Public Dishes 200",
+      "method": "GET",
+      "url": "{{ base_url }}/public/restaurants/{{ owner_uid }}/{{ restaurant_id }}/dishes",
+      "description": "Captura sugerida: lista publica de platos del restaurante seleccionado.",
+      "headers": []
+    },
+    {
+      "_id": "req_ev_04_owner_no_token",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 04 - GET Owner Restaurants 401 Sin Token",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants",
+      "description": "Debe responder 401. Sirve para evidenciar proteccion por autenticacion.",
+      "headers": []
+    },
+    {
+      "_id": "req_ev_05_owner_ok",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 05 - GET Owner Restaurants 200 Con Token",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants",
+      "description": "Debe responder 200 usando Authorization Bearer {{ id_token }}.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_06_create_restaurant",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 06 - POST Create Restaurant 201",
+      "method": "POST",
+      "url": "{{ base_url }}/owner/restaurants",
+      "description": "Crea un restaurante temporal. Copia el id del response y pegalo en temp_restaurant_id.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Restaurante Evidencia Insomnia\",\n  \"address\": \"Calle 10 # 20-30\",\n  \"city\": \"Bogota\",\n  \"phone\": \"3001234567\",\n  \"schedule\": \"Lun - Vie 8:00 - 18:00\",\n  \"rut\": \"900123456-7\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_07_get_empty_dishes",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 07 - GET Owner Dishes 200 Vacio",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes",
+      "description": "Debe responder 200 con arreglo vacio justo despues de crear el restaurante temporal.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_08_create_dish",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 08 - POST Create Dish 201",
+      "method": "POST",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes",
+      "description": "Crea un plato temporal. Copia el id del response y pegalo en temp_dish_id.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plato Evidencia Insomnia\",\n  \"price\": 25500,\n  \"categoryId\": \"pizza\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_09_get_dishes",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 09 - GET Owner Dishes 200 Con Registro",
+      "method": "GET",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes",
+      "description": "Debe responder 200 mostrando el plato temporal creado.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_10_update_dish",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 10 - PUT Update Dish 200",
+      "method": "PUT",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes/{{ temp_dish_id }}",
+      "description": "Actualiza nombre, precio y categoria del plato temporal.",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Plato Evidencia Insomnia Editado\",\n  \"price\": 26500,\n  \"categoryId\": \"tacos\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_11_delete_dish",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 11 - DELETE Dish 204",
+      "method": "DELETE",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}/dishes/{{ temp_dish_id }}",
+      "description": "Elimina el plato temporal.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_12_delete_restaurant",
+      "_type": "request",
+      "parentId": "fld_ev_owner",
+      "name": "Evidencia 12 - DELETE Restaurant 204",
+      "method": "DELETE",
+      "url": "{{ base_url }}/owner/restaurants/{{ temp_restaurant_id }}",
+      "description": "Elimina el restaurante temporal.",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ id_token }}"
+        }
+      ]
+    },
+    {
+      "_id": "req_ev_13_python_health",
+      "_type": "request",
+      "parentId": "fld_ev_python",
+      "name": "Evidencia 13 - GET Python Health 200",
+      "method": "GET",
+      "url": "{{ python_url }}/health",
+      "description": "Captura sugerida: status healthy, openai_available y firebase_available.",
+      "headers": []
+    },
+    {
+      "_id": "req_ev_14_python_bad_request",
+      "_type": "request",
+      "parentId": "fld_ev_python",
+      "name": "Evidencia 14 - POST Transcribe Only 400 Sin Archivo",
+      "method": "POST",
+      "url": "{{ python_url }}/transcribe-only",
+      "description": "Prueba negativa para evidenciar validacion. Debe responder 400 cuando no se envia file.",
+      "headers": []
+    }
+  ]
+}

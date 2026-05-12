@@ -9,6 +9,12 @@ import {
   OwnerService,
   RestaurantFormValue,
 } from '../../dashboard/owner.service';
+import {
+  formMaxLengths,
+  formPatterns,
+  normalizeTextInput,
+  trimmedRequired,
+} from '../../shared/form-validators';
 
 @Component({
   selector: 'app-owner-setup',
@@ -27,12 +33,63 @@ export class OwnerSetupComponent {
   readonly errorMessage = signal('');
 
   readonly restaurantForm = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    address: ['', [Validators.required, Validators.minLength(5)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
-    phone: ['', [Validators.required, Validators.minLength(7)]],
-    schedule: ['', [Validators.required, Validators.minLength(3)]],
-    rut: ['', [Validators.required, Validators.minLength(6)]],
+    name: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(2),
+        Validators.maxLength(formMaxLengths.restaurantName),
+      ],
+    ],
+    address: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(5),
+        Validators.maxLength(formMaxLengths.address),
+      ],
+    ],
+    city: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(2),
+        Validators.maxLength(formMaxLengths.city),
+        Validators.pattern(formPatterns.city),
+      ],
+    ],
+    phone: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(7),
+        Validators.maxLength(formMaxLengths.phone),
+        Validators.pattern(formPatterns.digitsOnly),
+      ],
+    ],
+    schedule: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(3),
+        Validators.maxLength(formMaxLengths.schedule),
+      ],
+    ],
+    rut: [
+      '',
+      [
+        Validators.required,
+        trimmedRequired,
+        Validators.minLength(6),
+        Validators.maxLength(formMaxLengths.rut),
+        Validators.pattern(formPatterns.rut),
+      ],
+    ],
   });
 
   constructor() {
@@ -56,8 +113,17 @@ export class OwnerSetupComponent {
     this.errorMessage.set('');
 
     try {
+      const { name, address, city, phone, schedule, rut } =
+        this.restaurantForm.getRawValue();
       await this.ownerService.createRestaurant(
-        this.restaurantForm.getRawValue() as RestaurantFormValue,
+        {
+          name: normalizeTextInput(name),
+          address: normalizeTextInput(address),
+          city: normalizeTextInput(city),
+          phone: phone.trim(),
+          schedule: normalizeTextInput(schedule),
+          rut: rut.trim(),
+        } as RestaurantFormValue,
       );
       await this.router.navigateByUrl('/restaurants');
     } catch (error) {

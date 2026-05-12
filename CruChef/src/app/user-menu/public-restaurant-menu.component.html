@@ -1,0 +1,62 @@
+<main class="main-layout">
+  <section class="content-shell">
+    <header class="content-header">
+      <div class="header-copy">
+        <p class="eyebrow">Menú Público</p>
+        <h1>Catálogo de Platos</h1>
+      </div>
+    </header>
+
+    @if (isLoading()) {
+      <section class="section-block fade-slide">
+        <div class="loading-container">
+          <p>Cargando menú...</p>
+        </div>
+      </section>
+    } @else if (error()) {
+      <section class="section-block fade-slide">
+        <div class="error-container">
+          <h2>Error</h2>
+          <p>{{ error() }}</p>
+        </div>
+      </section>
+    } @else {
+      <section class="section-block fade-slide">
+        <div class="section-heading">
+          <div>
+            <h2>Nuestro Menú</h2>
+            <p><span>{{ filteredDishes().length }}</span> platos disponibles</p>
+          </div>
+        </div>
+
+        <div class="category-filter">
+          @for (category of categories; track category.id) {
+            <button
+              type="button"
+              class="category-pill"
+              [class.is-active]="selectedCategoryId() === category.id"
+              (click)="selectedCategoryId.set(category.id)"
+            >
+              {{ category.name }}
+            </button>
+          }
+        </div>
+
+        @if (filteredDishes().length > 0) {
+          <div class="dish-grid">
+            @for (dish of filteredDishes(); track dish.id; let index = $index) {
+              <div class="dish-item" [style.--float-delay]="index">
+                <app-dish-card [dish]="dish" [animationDelay]="index" />
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-container">
+            <h3>No hay platos en esta categoría</h3>
+            <p>Prueba seleccionando otra categoría.</p>
+          </div>
+        }
+      </section>
+    }
+  </section>
+</main>

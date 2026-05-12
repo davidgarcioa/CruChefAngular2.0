@@ -1,78 +1,40 @@
-﻿import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { FirebaseError } from 'firebase/app';
-import {
-  Firestore,
-  collection,
-  collectionGroup,
-  getFirestore,
-  onSnapshot,
-} from 'firebase/firestore';
-import { Observable, from, of, switchMap } from 'rxjs';
+import { Observable, from, of, switchMap, map } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
-import { FirebaseService } from '../firebase.service';
 import { Dish } from '../models/dish.model';
 import { Restaurant } from '../models/restaurant.model';
+import { environment } from '../environment';
 import { getCategoryImageKey, getDishImageUrl } from '../dashboard/dashboard.data';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PublicMenuService {
-  private readonly firebaseService = inject(FirebaseService);
+  private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
-  private firestoreInstance: Firestore | null = null;
-
-  private get firestore(): Firestore {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
-      throw new Error('Firestore no esta disponible en este entorno.');
-    }
-
-    if (!this.firestoreInstance) {
-      this.firestoreInstance = getFirestore(this.firebaseService.app);
-    }
-
-    return this.firestoreInstance;
-  }
 
   getRestaurants(): Observable<Restaurant[]> {
-    if (!isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
+    if (!isPlatformBrowser(this.platformId)) {
       return of([]);
     }
 
     return from(this.authService.requireVerifiedUser()).pipe(
-      switchMap(() => {
-        const restaurantsRef = collectionGroup(this.firestore, 'restaurants');
-
-        return new Observable<Restaurant[]>((subscriber) => {
-          const unsubscribe = onSnapshot(
-            restaurantsRef,
-            (snapshot) => {
-              const restaurants = snapshot.docs
-                .map((document) =>
-                  this.mapRestaurant(
-                    document.id,
-                    document.data(),
-                    document.ref.parent.parent?.id ?? '',
-                  ),
-                )
-                .sort((left, right) => left.name.localeCompare(right.name));
-
-              subscriber.next(restaurants);
-            },
-            (error) => subscriber.error(error),
-          );
-
-          return unsubscribe;
-        });
-      }),
+      switchMap(() =>
+        this.http.get<Record<string, unknown>[]>(
+          `${environment.apiBaseUrl}/public/restaurants`,
+        ),
+      ),
+      map((restaurants) => restaurants.map((restaurant) => this.mapRestaurant(restaurant))),
     );
   }
 
   getDishes(restaurantId: string | null): Observable<Dish[]> {
-    if (!restaurantId || !isPlatformBrowser(this.platformId) || !this.firebaseService.app) {
+    if (!restaurantId || !isPlatformBrowser(this.platformId)) {
       return of([]);
     }
 
@@ -83,53 +45,48 @@ export class PublicMenuService {
     }
 
     return from(this.authService.requireVerifiedUser()).pipe(
-      switchMap(() => {
-        const dishesRef = collection(
-          this.firestore,
-          'users',
-          ownerUid,
-          'restaurants',
-          currentRestaurantId,
-          'dishes',
-        );
-
-        return new Observable<Dish[]>((subscriber) => {
-          const unsubscribe = onSnapshot(
-            dishesRef,
-            (snapshot) => {
-              const dishes = snapshot.docs
-                .map((document) => this.mapDish(document.id, document.data(), currentRestaurantId))
-                .sort((left, right) => left.name.localeCompare(right.name));
-
-              subscriber.next(dishes);
-            },
-            (error) => subscriber.error(error),
-          );
-
-          return unsubscribe;
-        });
-      }),
+      switchMap(() =>
+        this.http.get<Record<string, unknown>[]>(
+          `${environment.apiBaseUrl}/public/restaurants/${encodeURIComponent(ownerUid)}/${encodeURIComponent(currentRestaurantId)}/dishes`,
+        ),
+      ),
+      map((dishes) =>
+        dishes.map((dish) => this.mapDish(dish, currentRestaurantId)),
+      ),
     );
   }
 
   getErrorMessage(error: unknown): string {
-    const code = this.getErrorCode(error);
+    if (error instanceof HttpErrorResponse) {
+      const message = typeof error.error?.message === 'string' ? error.error.message : '';
 
-    if (
-      code.includes('UNAUTHENTICATED') ||
-      code.includes('invalid authentication credentials') ||
-      code.includes('auth/user-not-found') ||
-      code.includes('auth/argument-error')
-    ) {
-      return 'Tu sesion ya no es valida. Vuelve a iniciar sesion para cargar el menu.';
+      if (error.status === 0) {
+        return 'No se pudo conectar con el backend. Verifica que Backend este corriendo en http://localhost:3000.';
+      }
+
+      if (error.status === 401) {
+        return message || 'Tu sesion ya no es valida. Inicia sesion de nuevo.';
+      }
+
+      if (error.status === 404) {
+        return message || 'El restaurante solicitado no existe.';
+      }
+
+      if (error.status >= 500) {
+        return message || 'El backend no pudo cargar el catalogo.';
+      }
+
+      return message || 'No se pudo cargar el catalogo de restaurantes.';
     }
 
+    const code = this.getErrorCode(error);
+
     switch (code) {
-      case 'permission-denied':
-        return 'Firebase no permite leer los restaurantes. Ajusta las reglas de Firestore.';
       case 'unavailable':
       case 'auth/network-request-failed':
-        return 'No se pudo conectar con Firebase.';
+        return 'No se pudo conectar con el backend.';
+      case 'auth/user-not-found':
+        return 'Tu sesion ya no es valida. Inicia sesion de nuevo.';
       default:
         return 'No se pudo cargar el catalogo de restaurantes.';
     }
@@ -156,14 +113,10 @@ export class PublicMenuService {
     return '';
   }
 
-  private mapRestaurant(
-    id: string,
-    document: Record<string, unknown>,
-    ownerUid: string,
-  ): Restaurant {
+  private mapRestaurant(document: Record<string, unknown>): Restaurant {
     return {
-      id,
-      ownerUid,
+      id: String(document['id'] ?? ''),
+      ownerUid: String(document['ownerUid'] ?? ''),
       ownerEmail: String(document['ownerEmail'] ?? ''),
       name: String(document['name'] ?? ''),
       address: String(document['address'] ?? ''),
@@ -177,7 +130,6 @@ export class PublicMenuService {
   }
 
   private mapDish(
-    id: string,
     document: Record<string, unknown>,
     restaurantId: string,
   ): Dish {
@@ -186,19 +138,19 @@ export class PublicMenuService {
       typeof document['imageKey'] === 'string'
         ? document['imageKey']
         : getCategoryImageKey(categoryId);
+    const rating = Number(document['rating'] ?? 0);
+    const ratingCount = Number(
+      document['ratingCount'] ?? (rating > 0 ? 1 : 0),
+    );
     const restaurantName = String(document['restaurantName'] ?? document['restaurant'] ?? '');
 
     return {
-      id,
+      id: String(document['id'] ?? ''),
       name: String(document['name'] ?? ''),
       price: Number(document['price'] ?? 0),
-      rating: Number(document['rating'] ?? 0),
-      ratingCount: Number(document['ratingCount'] ?? (Number(document['rating'] ?? 0) > 0 ? 1 : 0)),
-      ratingTotal: Number(
-        document['ratingTotal'] ??
-          Number(document['rating'] ?? 0) *
-            Number(document['ratingCount'] ?? (Number(document['rating'] ?? 0) > 0 ? 1 : 0)),
-      ),
+      rating,
+      ratingCount,
+      ratingTotal: Number(document['ratingTotal'] ?? rating * ratingCount),
       restaurant: String(document['restaurant'] ?? restaurantName),
       restaurantId:
         typeof document['restaurantId'] === 'string' ? document['restaurantId'] : restaurantId,

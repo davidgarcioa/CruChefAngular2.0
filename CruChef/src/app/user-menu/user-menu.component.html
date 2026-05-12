@@ -7,23 +7,7 @@
         <p class="eyebrow">Vista de usuario</p>
         <h1>{{ pageTitle() }}</h1>
         <p class="lead">
-          @if (userAlerts().length > 0) {
-      <section class="section-block fade-slide delay-1">
-        <div class="order-alert-stack">
-          @for (alert of userAlerts(); track alert.id) {
-            <article class="order-alert order-alert--{{ alert.tone }}">
-              <div>
-                <strong>{{ alert.title }}</strong>
-                <p>{{ alert.detail }}</p>
-              </div>
-              <button type="button" class="order-alert__close" (click)="dismissUserAlert(alert.id)">Cerrar</button>
-            </article>
-          }
-        </div>
-      </section>
-    }
-
-    @if (currentView() === 'menu') {
+          @if (currentView() === 'menu') {
             Estas viendo el menu de <span>{{ currentRestaurantLabel() }}</span>.
           } @else {
             {{ pageLead() }}
@@ -31,22 +15,6 @@
         </p>
       </div>
     </header>
-
-    @if (userAlerts().length > 0) {
-      <section class="section-block fade-slide delay-1">
-        <div class="order-alert-stack">
-          @for (alert of userAlerts(); track alert.id) {
-            <article class="order-alert order-alert--{{ alert.tone }}">
-              <div>
-                <strong>{{ alert.title }}</strong>
-                <p>{{ alert.detail }}</p>
-              </div>
-              <button type="button" class="order-alert__close" (click)="dismissUserAlert(alert.id)">Cerrar</button>
-            </article>
-          }
-        </div>
-      </section>
-    }
 
     @if (currentView() === 'menu') {
       <section class="focus-panel section-block fade-slide delay-1">
@@ -184,6 +152,15 @@
               <label class="field">
                 <span>Cantidad</span>
                 <input type="number" formControlName="quantity" min="1" max="10" />
+                @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) {
+                  @if (orderForm.controls.quantity.hasError('required')) {
+                    <small>La cantidad es obligatoria.</small>
+                  } @else if (orderForm.controls.quantity.hasError('min')) {
+                    <small>La cantidad minima es 1.</small>
+                  } @else if (orderForm.controls.quantity.hasError('max')) {
+                    <small>La cantidad maxima por pedido es 10.</small>
+                  }
+                }
               </label>
 
               <label class="field">
@@ -193,6 +170,9 @@
                   rows="4"
                   placeholder="Sin cebolla, sin picante, entrega en porteria..."
                 ></textarea>
+                @if (orderForm.controls.notes.touched && orderForm.controls.notes.hasError('maxlength')) {
+                  <small>Las indicaciones no pueden superar 250 caracteres.</small>
+                }
               </label>
 
               <button type="submit" class="action-button action-button--primary" [disabled]="isSubmittingOrder()">
@@ -371,6 +351,15 @@
               <label class="field">
                 <span>Calificacion</span>
                 <input type="number" formControlName="rating" min="1" max="5" />
+                @if (ratingForm.controls.rating.touched && ratingForm.controls.rating.invalid) {
+                  @if (ratingForm.controls.rating.hasError('required')) {
+                    <small>La calificacion es obligatoria.</small>
+                  } @else if (ratingForm.controls.rating.hasError('min')) {
+                    <small>La calificacion minima es 1.</small>
+                  } @else if (ratingForm.controls.rating.hasError('max')) {
+                    <small>La calificacion maxima es 5.</small>
+                  }
+                }
               </label>
 
               <label class="field">
@@ -380,6 +369,9 @@
                   rows="4"
                   placeholder="Como te fue con la comida y el servicio?"
                 ></textarea>
+                @if (ratingForm.controls.reviewText.touched && ratingForm.controls.reviewText.hasError('maxlength')) {
+                  <small>El comentario no puede superar 250 caracteres.</small>
+                }
               </label>
 
               <div class="action-row">
@@ -406,4 +398,3 @@
     }
   </section>
 </main>
-
