@@ -4,6 +4,42 @@ const {
   normalizeStatusPayload,
   normalizeRatingPayload,
 } = require('../utils/normalize-order-payload');
+const notificationService = require('./notification.service');
+
+const statusNotificationMap = {
+  pending: {
+    title: 'Pedido recibido',
+    message: 'Tu pedido fue enviado al restaurante.',
+  },
+  accepted: {
+    title: 'Pedido aceptado',
+    message: 'El restaurante acepto tu pedido.',
+  },
+  preparing: {
+    title: 'Pedido en preparacion',
+    message: 'Tu pedido ya esta en preparacion.',
+  },
+  ready: {
+    title: 'Pedido listo',
+    message: 'Tu pedido esta listo.',
+  },
+  delivered: {
+    title: 'Pedido entregado',
+    message: 'Tu pedido fue marcado como entregado. Ya puedes calificarlo.',
+  },
+  cancelled: {
+    title: 'Pedido cancelado',
+    message: 'El restaurante cancelo tu pedido.',
+  },
+};
+
+async function createNotificationSafely(payload) {
+  try {
+    await notificationService.createNotification(payload);
+  } catch (error) {
+    console.error('No se pudo crear la notificacion del pedido.', error);
+  }
+}
 
 async function listOrders(filters = {}) {
   let query = db.collection('orders');
@@ -40,10 +76,24 @@ async function createOrder(body) {
   });
 
   const snapshot = await document.get();
-  return {
+  const createdOrder = {
     id: document.id,
     ...snapshot.data(),
   };
+
+  await createNotificationSafely({
+    recipientUid: payload.ownerUid,
+    audience: 'owner',
+    type: 'order-created',
+    title: 'Nuevo pedido recibido',
+    message: `${payload.customerName} pidio ${payload.quantity} x ${payload.dishName}. Pago: ${payload.paymentMethod === 'cash' ? 'pendiente' : 'aprobado'}.`,
+    orderId: document.id,
+    restaurantId: payload.restaurantId,
+    restaurantName: payload.restaurantName,
+    dishName: payload.dishName,
+  });
+
+  return createdOrder;
 }
 
 async function updateOrderStatus(id, body) {
@@ -55,6 +105,7 @@ async function updateOrderStatus(id, body) {
   }
 
   const { status } = normalizeStatusPayload(body);
+  const order = snapshot.data();
   await documentRef.update({
     status,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -63,10 +114,27 @@ async function updateOrderStatus(id, body) {
   });
 
   const updatedSnapshot = await documentRef.get();
-  return {
+  const updatedOrder = {
     id: updatedSnapshot.id,
     ...updatedSnapshot.data(),
   };
+
+  const notification = statusNotificationMap[status];
+  if (notification) {
+    await createNotificationSafely({
+      recipientUid: order.customerUid,
+      audience: 'user',
+      type: `order-${status}`,
+      title: notification.title,
+      message: `${notification.message} Plato: ${order.dishName}.`,
+      orderId: id,
+      restaurantId: order.restaurantId,
+      restaurantName: order.restaurantName,
+      dishName: order.dishName,
+    });
+  }
+
+  return updatedOrder;
 }
 
 async function rateOrder(id, body) {
@@ -95,10 +163,24 @@ async function rateOrder(id, body) {
   });
 
   const updatedSnapshot = await documentRef.get();
-  return {
+  const updatedOrder = {
     id: updatedSnapshot.id,
     ...updatedSnapshot.data(),
   };
+
+  await createNotificationSafely({
+    recipientUid: order.ownerUid,
+    audience: 'owner',
+    type: 'order-rated',
+    title: 'Nueva calificacion recibida',
+    message: `${order.customerName} califico ${order.dishName} con ${rating}/5.`,
+    orderId: id,
+    restaurantId: order.restaurantId,
+    restaurantName: order.restaurantName,
+    dishName: order.dishName,
+  });
+
+  return updatedOrder;
 }
 
 module.exports = {

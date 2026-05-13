@@ -50,6 +50,9 @@ export class UserMenuComponent {
   readonly selectedCategoryId = signal('all');
   readonly selectedRestaurantId = signal('');
   readonly selectedDish = signal<Dish | null>(null);
+  readonly checkoutStep = signal<'details' | 'payment' | 'review'>('details');
+  readonly orderQuantity = signal(1);
+  readonly selectedPaymentMethod = signal('cash');
   readonly catalogError = signal('');
   readonly ordersError = signal('');
   readonly orderSuccess = signal('');
@@ -63,10 +66,15 @@ export class UserMenuComponent {
   );
   readonly ratingOrderId = signal<string | null>(null);
   readonly hasRestaurants = computed(() => this.restaurants().length > 0);
+  readonly hasSelectedRestaurant = computed(() => this.selectedRestaurantId().length > 0);
+  readonly restaurantCitiesCount = computed(
+    () => new Set(this.restaurants().map((restaurant) => restaurant.city).filter(Boolean)).size,
+  );
 
   readonly orderForm = this.fb.nonNullable.group({
     quantity: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
     notes: ['', [Validators.maxLength(formMaxLengths.notes)]],
+    paymentMethod: ['cash', Validators.required],
   });
 
   readonly ratingForm = this.fb.nonNullable.group({
@@ -82,7 +90,7 @@ export class UserMenuComponent {
   );
 
   readonly currentRestaurantLabel = computed(
-    () => this.currentRestaurant()?.name || 'sin restaurante seleccionado',
+    () => this.currentRestaurant()?.name || 'elige un restaurante',
   );
 
   readonly filteredDishes = computed(() => {
@@ -119,6 +127,24 @@ export class UserMenuComponent {
     return this.categories.find((category) => category.id === dish.categoryId)?.name ?? 'Categoria';
   });
 
+  readonly checkoutSubtotal = computed(() => {
+    const dish = this.selectedDish();
+    return dish ? dish.price * this.orderQuantity() : 0;
+  });
+
+  readonly checkoutTotal = computed(() => this.checkoutSubtotal());
+
+  readonly paymentMethodLabel = computed(() => {
+    switch (this.selectedPaymentMethod()) {
+      case 'card':
+        return 'Tarjeta';
+      case 'transfer':
+        return 'Transferencia';
+      default:
+        return 'Efectivo';
+    }
+  });
+
   readonly pageTitle = computed(() => {
     const view = this.currentView();
 
@@ -126,7 +152,9 @@ export class UserMenuComponent {
       ? 'Tus pedidos'
       : view === 'history'
         ? 'Historial y calificaciones'
-        : 'Platos disponibles';
+        : this.hasSelectedRestaurant()
+          ? 'Platos disponibles'
+          : 'Restaurantes disponibles';
   });
 
   readonly pageLead = computed(() => {
@@ -136,8 +164,34 @@ export class UserMenuComponent {
       ? 'Revisa el estado de los pedidos que ya enviaste a los propietarios.'
       : view === 'history'
         ? 'Consulta pedidos entregados o cancelados y deja tu calificacion cuando corresponda.'
-        : `Estas viendo el menu de ${this.currentRestaurantLabel()}.`;
+        : this.hasSelectedRestaurant()
+          ? `Estas viendo el menu de ${this.currentRestaurantLabel()}.`
+          : 'Elige el restaurante que quieres revisar para ver sus platos disponibles.';
   });
+
+  readonly selectedRestaurantDetails = computed(() => {
+    const restaurant = this.currentRestaurant();
+
+    return restaurant
+      ? [
+          { label: 'Ciudad', value: restaurant.city || 'Sin ciudad' },
+          { label: 'Direccion', value: restaurant.address || 'Sin direccion' },
+          { label: 'Horario', value: restaurant.schedule || 'Sin horario' },
+          { label: 'Telefono', value: restaurant.phone || 'Sin telefono' },
+        ]
+      : [
+          { label: 'Restaurantes', value: String(this.restaurants().length) },
+          { label: 'Ciudades', value: String(this.restaurantCitiesCount()) },
+          { label: 'Verificados', value: String(this.verifiedRestaurantsCount()) },
+          { label: 'Seleccion', value: 'Pendiente' },
+        ];
+  });
+
+  readonly verifiedRestaurantsCount = computed(
+    () =>
+      this.restaurants().filter((restaurant) => restaurant.verificationStatus === 'verified')
+        .length,
+  );
 
   constructor() {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
@@ -158,9 +212,9 @@ export class UserMenuComponent {
           );
 
           if (!hasSelection) {
-            this.selectedRestaurantId.set(
-              restaurants[0] ? this.getRestaurantKey(restaurants[0]) : '',
-            );
+            this.selectedRestaurantId.set('');
+            this.dishes.set([]);
+            this.selectedDish.set(null);
           }
 
           if (restaurants.length === 0) {
@@ -226,10 +280,23 @@ export class UserMenuComponent {
           this.ordersError.set(this.orderService.getErrorMessage(error));
         },
       });
+
+    this.orderForm.controls.quantity.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((quantity) => {
+        this.orderQuantity.set(Number(quantity) || 1);
+      });
+
+    this.orderForm.controls.paymentMethod.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((paymentMethod) => {
+        this.selectedPaymentMethod.set(paymentMethod || 'cash');
+      });
   }
 
   selectRestaurant(restaurantId: string): void {
     this.selectedRestaurantId.set(restaurantId);
+    this.selectedCategoryId.set('all');
     this.selectedDish.set(null);
     this.orderSuccess.set('');
     this.orderActionError.set('');
@@ -242,7 +309,35 @@ export class UserMenuComponent {
     this.orderForm.reset({
       quantity: 1,
       notes: '',
+      paymentMethod: 'cash',
     });
+    this.orderQuantity.set(1);
+    this.selectedPaymentMethod.set('cash');
+    this.checkoutStep.set('details');
+  }
+
+  goToPaymentStep(): void {
+    this.orderForm.controls.quantity.markAsTouched();
+
+    if (this.orderForm.controls.quantity.invalid) {
+      return;
+    }
+
+    this.checkoutStep.set('payment');
+  }
+
+  goToReviewStep(): void {
+    this.orderForm.controls.paymentMethod.markAsTouched();
+
+    if (this.orderForm.controls.paymentMethod.invalid) {
+      return;
+    }
+
+    this.checkoutStep.set('review');
+  }
+
+  goToCheckoutStep(step: 'details' | 'payment' | 'review'): void {
+    this.checkoutStep.set(step);
   }
 
   async submitOrder(): Promise<void> {
@@ -270,7 +365,11 @@ export class UserMenuComponent {
       this.orderForm.reset({
         quantity: 1,
         notes: '',
+        paymentMethod: 'cash',
       });
+      this.orderQuantity.set(1);
+      this.selectedPaymentMethod.set('cash');
+      this.checkoutStep.set('details');
     } catch (error) {
       this.orderActionError.set(this.orderService.getErrorMessage(error));
     } finally {
@@ -331,6 +430,21 @@ export class UserMenuComponent {
 
   getOrderStatusClass(status: OrderStatus): string {
     return `order-status order-status--${status}`;
+  }
+
+  getPaymentMethodLabel(paymentMethod: string): string {
+    switch (paymentMethod) {
+      case 'card':
+        return 'Tarjeta';
+      case 'transfer':
+        return 'Transferencia';
+      default:
+        return 'Efectivo';
+    }
+  }
+
+  getPaymentStatusLabel(paymentStatus: string): string {
+    return paymentStatus === 'approved' ? 'Aprobado' : 'Pendiente';
   }
 
   canRateOrder(order: Order): boolean {

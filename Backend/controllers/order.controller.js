@@ -6,6 +6,7 @@ const validationMessages = new Set([
   'La orden requiere un plato valido.',
   'La cantidad debe estar entre 1 y 10.',
   'El precio unitario no es valido.',
+  'El metodo de pago no es valido.',
   'El estado de la orden no es valido.',
   'La calificacion debe estar entre 1 y 5.',
   'Solo se pueden calificar ordenes entregadas.',

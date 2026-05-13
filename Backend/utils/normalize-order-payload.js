@@ -21,6 +21,9 @@ function normalizeOrderPayload(body) {
   const quantity = Number(body.quantity);
   const unitPrice = Number(body.unitPrice);
   const notes = typeof body.notes === 'string' ? body.notes.trim() : '';
+  const paymentMethod =
+    typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() : 'cash';
+  const allowedPaymentMethods = ['cash', 'card', 'transfer'];
 
   if (!ownerUid || !restaurantId || restaurantName.length < 2) {
     throw new Error('La orden requiere un restaurante valido.');
@@ -42,6 +45,10 @@ function normalizeOrderPayload(body) {
     throw new Error('El precio unitario no es valido.');
   }
 
+  if (!allowedPaymentMethods.includes(paymentMethod)) {
+    throw new Error('El metodo de pago no es valido.');
+  }
+
   return {
     ownerUid,
     restaurantId,
@@ -55,8 +62,11 @@ function normalizeOrderPayload(body) {
     categoryId,
     quantity,
     unitPrice,
+    serviceFee: 0,
     totalPrice: quantity * unitPrice,
     notes,
+    paymentMethod,
+    paymentStatus: paymentMethod === 'cash' ? 'pending' : 'approved',
     status: 'pending',
     rating: null,
     reviewText: '',

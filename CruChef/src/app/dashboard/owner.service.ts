@@ -15,6 +15,7 @@ import {
 
 import { AuthService } from '../auth/auth.service';
 import { Dish } from '../models/dish.model';
+import { InventoryItem } from '../models/inventory-item.model';
 import { Restaurant } from '../models/restaurant.model';
 import { environment } from '../environment';
 import { emptyDishes, getCategoryImageKey, getDishImageUrl } from './dashboard.data';
@@ -34,6 +35,13 @@ export interface DishFormValue {
   categoryId: string;
 }
 
+export interface InventoryFormValue {
+  name: string;
+  unit: string;
+  quantity: number;
+  minimum: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -43,6 +51,7 @@ export class OwnerService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly refreshRestaurants$ = new BehaviorSubject<void>(undefined);
   private readonly refreshDishes$ = new BehaviorSubject<void>(undefined);
+  private readonly refreshInventory$ = new BehaviorSubject<void>(undefined);
 
   getRestaurants(): Observable<Restaurant[]> {
     if (!isPlatformBrowser(this.platformId)) {
@@ -164,6 +173,67 @@ export class OwnerService {
     this.refreshDishes$.next();
   }
 
+  getInventory(restaurantId: string | null): Observable<InventoryItem[]> {
+    if (!restaurantId || !isPlatformBrowser(this.platformId)) {
+      return of([]);
+    }
+
+    return this.refreshInventory$.pipe(
+      switchMap(() => from(this.authService.getAuthHeaders())),
+      switchMap((headers) =>
+        this.http.get<Record<string, unknown>[]>(
+          `${this.restaurantsUrl}/${encodeURIComponent(restaurantId)}/inventory`,
+          { headers },
+        ),
+      ),
+      map((items) => items.map((item) => this.mapInventoryItem(item))),
+      catchError((error) => {
+        console.error('No se pudo cargar el inventario.', error);
+        return of([] as InventoryItem[]);
+      }),
+    );
+  }
+
+  async createInventoryItem(restaurantId: string, payload: InventoryFormValue): Promise<void> {
+    this.ensureBrowser();
+    const headers = await this.authService.getAuthHeaders();
+    await firstValueFrom(
+      this.http.post(`${this.restaurantsUrl}/${encodeURIComponent(restaurantId)}/inventory`, payload, {
+        headers,
+      }),
+    );
+    this.refreshInventory$.next();
+  }
+
+  async updateInventoryItem(
+    restaurantId: string,
+    itemId: string,
+    payload: InventoryFormValue,
+  ): Promise<void> {
+    this.ensureBrowser();
+    const headers = await this.authService.getAuthHeaders();
+    await firstValueFrom(
+      this.http.put(
+        `${this.restaurantsUrl}/${encodeURIComponent(restaurantId)}/inventory/${encodeURIComponent(itemId)}`,
+        payload,
+        { headers },
+      ),
+    );
+    this.refreshInventory$.next();
+  }
+
+  async deleteInventoryItem(restaurantId: string, itemId: string): Promise<void> {
+    this.ensureBrowser();
+    const headers = await this.authService.getAuthHeaders();
+    await firstValueFrom(
+      this.http.delete(
+        `${this.restaurantsUrl}/${encodeURIComponent(restaurantId)}/inventory/${encodeURIComponent(itemId)}`,
+        { headers },
+      ),
+    );
+    this.refreshInventory$.next();
+  }
+
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       const message = typeof error.error?.message === 'string' ? error.error.message : '';
@@ -268,5 +338,33 @@ export class OwnerService {
           ? String(document['imageUrl'])
           : getDishImageUrl(imageKey),
     };
+  }
+
+  private mapInventoryItem(document: Record<string, unknown>): InventoryItem {
+    return {
+      id: String(document['id'] ?? ''),
+      name: String(document['name'] ?? ''),
+      unit: String(document['unit'] ?? ''),
+      quantity: Number(document['quantity'] ?? 0),
+      minimum: Number(document['minimum'] ?? 0),
+      updatedAtMs: this.toMillis(document['updatedAt']),
+    };
+  }
+
+  private toMillis(value: unknown): number {
+    if (typeof value === 'object' && value !== null) {
+      const maybeSeconds = (value as { seconds?: unknown; _seconds?: unknown }).seconds;
+      const legacySeconds = (value as { seconds?: unknown; _seconds?: unknown })._seconds;
+
+      if (typeof maybeSeconds === 'number') {
+        return maybeSeconds * 1000;
+      }
+
+      if (typeof legacySeconds === 'number') {
+        return legacySeconds * 1000;
+      }
+    }
+
+    return 0;
   }
 }

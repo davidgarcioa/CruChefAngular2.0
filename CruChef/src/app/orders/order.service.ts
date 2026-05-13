@@ -12,6 +12,7 @@ import { environment } from '../environment';
 export interface CreateOrderPayload {
   quantity: number;
   notes: string;
+  paymentMethod: string;
 }
 
 export interface OrderRatingPayload {
@@ -102,7 +103,9 @@ export class OrderService {
         categoryId: dish.categoryId,
         quantity: Number(payload.quantity),
         unitPrice: Number(dish.price),
+        serviceFee: 0,
         notes: payload.notes.trim(),
+        paymentMethod: payload.paymentMethod,
       }),
     );
 
@@ -193,8 +196,11 @@ export class OrderService {
       categoryId: String(document['categoryId'] ?? 'all'),
       quantity: Number(document['quantity'] ?? 1),
       unitPrice: Number(document['unitPrice'] ?? 0),
+      serviceFee: Number(document['serviceFee'] ?? 0),
       totalPrice: Number(document['totalPrice'] ?? 0),
       notes: String(document['notes'] ?? ''),
+      paymentMethod: String(document['paymentMethod'] ?? 'cash'),
+      paymentStatus: String(document['paymentStatus'] ?? 'pending'),
       status: this.mapStatus(document['status']),
       createdAtMs: this.toMillis(document['createdAt']),
       updatedAtMs: this.toMillis(document['updatedAt']),
@@ -242,5 +248,3 @@ export class OrderService {
     return this.toMillis(value);
   }
 }
-
-

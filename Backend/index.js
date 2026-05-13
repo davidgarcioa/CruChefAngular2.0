@@ -6,6 +6,7 @@ const orderRoutes = require('./routes/order.routes');
 const userRoutes = require('./routes/user.routes');
 const restaurantRoutes = require('./routes/restaurant.routes');
 const publicRoutes = require('./routes/public.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -23,6 +24,7 @@ app.use('/api', orderRoutes);
 app.use('/api', userRoutes);
 app.use('/api', restaurantRoutes);
 app.use('/api', publicRoutes);
+app.use('/api', notificationRoutes);
 
 app.listen(port, () => {
   console.log(`Servidor corriendo en el puerto ${port}`);

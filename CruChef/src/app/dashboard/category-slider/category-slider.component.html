@@ -1,4 +1,4 @@
-<div class="categories" aria-label="Categorias">
+<div class="categories" [class.categories--gold]="theme === 'gold'" aria-label="Categorias">
   @for (category of categories; track category.id; let index = $index) {
     <button
       type="button"

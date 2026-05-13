@@ -15,12 +15,13 @@ import {
   orderStatusLabelMap,
 } from '../models/order.model';
 import { Dish } from '../models/dish.model';
+import { InventoryItem } from '../models/inventory-item.model';
 import { Restaurant } from '../models/restaurant.model';
 import { AiVoiceAssistantComponent } from './ai-voice-assistant/ai-voice-assistant.component';
 import { CategorySliderComponent } from './category-slider/category-slider.component';
 import { categories, getCategoryImageUrl, ownerNavigationItems } from './dashboard.data';
 import { DishCardComponent } from './dish-card/dish-card.component';
-import { DishFormValue, OwnerService } from './owner.service';
+import { DishFormValue, InventoryFormValue, OwnerService } from './owner.service';
 import { SearchBarComponent } from './search-bar/search-bar.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import {
@@ -58,17 +59,23 @@ export class DashboardComponent {
   readonly selectedCategoryId = signal('all');
   readonly restaurants = signal<Restaurant[]>([]);
   readonly dishes = signal<Dish[]>([]);
+  readonly inventoryItems = signal<InventoryItem[]>([]);
   readonly ownerOrders = signal<Order[]>([]);
   readonly selectedRestaurantId = signal<string | null>(null);
   readonly selectedOrderRestaurantId = signal<'all' | string>('all');
   readonly editingDishId = signal<string | null>(null);
+  readonly editingInventoryItemId = signal<string | null>(null);
   readonly viewedDish = signal<Dish | null>(null);
   readonly isSavingDish = signal(false);
   readonly updatingOrderId = signal<string | null>(null);
+  readonly pendingOrderCancellation = signal<Order | null>(null);
+  readonly pendingDishDeletionId = signal<string | null>(null);
   readonly dishError = signal('');
   readonly dishSuccess = signal('');
   readonly ownerOrderError = signal('');
   readonly ownerOrderSuccess = signal('');
+  readonly inventoryError = signal('');
+  readonly inventorySuccess = signal('');
   readonly currentView = signal(
     (this.route.snapshot.data['view'] as string | undefined) ?? 'restaurants',
   );
@@ -91,6 +98,13 @@ export class DashboardComponent {
     ],
     price: [24000, [Validators.required, Validators.min(1000), Validators.max(1000000)]],
     categoryId: ['burgers', Validators.required],
+  });
+
+  readonly inventoryForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, trimmedRequired, Validators.minLength(2), Validators.maxLength(60)]],
+    unit: ['unid', [Validators.required, Validators.maxLength(16)]],
+    quantity: [0, [Validators.required, Validators.min(0)]],
+    minimum: [5, [Validators.required, Validators.min(0)]],
   });
 
   readonly selectedRestaurant = computed(() =>
@@ -215,6 +229,12 @@ export class DashboardComponent {
   });
 
   readonly dashboardRecentOrders = computed(() => this.dashboardOrders().slice(0, 5));
+  readonly lowInventoryItems = computed(() =>
+    this.inventoryItems().filter((item) => item.quantity <= item.minimum),
+  );
+  readonly emptyInventoryItems = computed(() =>
+    this.inventoryItems().filter((item) => item.quantity === 0),
+  );
 
   readonly viewTitle = computed(() => {
     const currentView = this.currentView();
@@ -223,11 +243,13 @@ export class DashboardComponent {
       ? 'Propietario'
       : currentView === 'dashboard'
         ? 'Dashboard'
-        : currentView === 'orders'
-          ? 'Ordenes'
-          : currentView === 'ai'
-            ? 'Asistente IA'
-            : 'Historial';
+          : currentView === 'orders'
+            ? 'Ordenes'
+            : currentView === 'inventory'
+              ? 'Inventario'
+              : currentView === 'ai'
+                ? 'Asistente IA'
+                : 'Historial';
   });
 
   constructor() {
@@ -271,6 +293,15 @@ export class DashboardComponent {
         this.dishes.set(dishes);
       });
 
+    toObservable(this.selectedRestaurantId)
+      .pipe(
+        switchMap((restaurantId) => this.ownerService.getInventory(restaurantId)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((items) => {
+        this.inventoryItems.set(items);
+      });
+
     toObservable(this.restaurants)
       .pipe(
         switchMap((restaurants) => this.orderService.getOwnerOrders(restaurants)),
@@ -292,7 +323,12 @@ export class DashboardComponent {
     this.selectedRestaurantId.set(restaurantId);
     this.viewedDish.set(null);
     this.editingDishId.set(null);
+    this.qrDataUrl.set('');
+    this.qrPublicUrl.set('');
+    this.qrRestaurantId.set(null);
+    this.qrError.set('');
     this.resetDishForm();
+    this.resetInventoryForm();
   }
 
   selectOrderRestaurant(restaurantId: 'all' | string): void {
@@ -356,6 +392,21 @@ export class DashboardComponent {
       return;
     }
 
+    this.pendingDishDeletionId.set(dishId);
+  }
+
+  cancelDishDeletion(): void {
+    this.pendingDishDeletionId.set(null);
+  }
+
+  async confirmDishDeletion(): Promise<void> {
+    const dishId = this.pendingDishDeletionId();
+    const restaurant = this.selectedRestaurant();
+    if (!dishId || !restaurant) {
+      this.pendingDishDeletionId.set(null);
+      return;
+    }
+
     this.dishError.set('');
     this.dishSuccess.set('');
 
@@ -373,6 +424,8 @@ export class DashboardComponent {
       this.dishSuccess.set('Plato eliminado correctamente.');
     } catch (error) {
       this.dishError.set(this.ownerService.getErrorMessage(error));
+    } finally {
+      this.pendingDishDeletionId.set(null);
     }
   }
 
@@ -393,7 +446,122 @@ export class DashboardComponent {
     });
   }
 
+  editInventoryItem(item: InventoryItem): void {
+    this.editingInventoryItemId.set(item.id);
+    this.inventoryError.set('');
+    this.inventorySuccess.set('');
+    this.inventoryForm.setValue({
+      name: item.name,
+      unit: item.unit,
+      quantity: item.quantity,
+      minimum: item.minimum,
+    });
+  }
+
+  resetInventoryForm(): void {
+    this.editingInventoryItemId.set(null);
+    this.inventoryForm.reset({
+      name: '',
+      unit: 'unid',
+      quantity: 0,
+      minimum: 5,
+    });
+  }
+
+  async submitInventoryItem(): Promise<void> {
+    if (this.inventoryForm.invalid) {
+      this.inventoryForm.markAllAsTouched();
+      return;
+    }
+
+    const restaurant = this.selectedRestaurant();
+    if (!restaurant) {
+      this.inventoryError.set('Selecciona un restaurante para registrar inventario.');
+      return;
+    }
+
+    this.inventoryError.set('');
+    this.inventorySuccess.set('');
+
+    const payload = {
+      ...this.inventoryForm.getRawValue(),
+      name: normalizeTextInput(this.inventoryForm.controls.name.value),
+      unit: normalizeTextInput(this.inventoryForm.controls.unit.value),
+    } as InventoryFormValue;
+
+    try {
+      if (this.editingInventoryItemId()) {
+        await this.ownerService.updateInventoryItem(restaurant.id, this.editingInventoryItemId()!, payload);
+        this.inventorySuccess.set('Insumo actualizado.');
+      } else {
+        await this.ownerService.createInventoryItem(restaurant.id, payload);
+        this.inventorySuccess.set('Insumo registrado.');
+      }
+
+      this.resetInventoryForm();
+    } catch (error) {
+      this.inventoryError.set(this.ownerService.getErrorMessage(error));
+    }
+  }
+
+  async deleteInventoryItem(itemId: string): Promise<void> {
+    const restaurant = this.selectedRestaurant();
+    if (!restaurant) {
+      return;
+    }
+
+    try {
+      await this.ownerService.deleteInventoryItem(restaurant.id, itemId);
+      this.inventorySuccess.set('Insumo eliminado.');
+    } catch (error) {
+      this.inventoryError.set(this.ownerService.getErrorMessage(error));
+    }
+  }
+
+  getInventoryStatus(item: InventoryItem): string {
+    if (item.quantity === 0) {
+      return 'Agotado';
+    }
+
+    if (item.quantity <= item.minimum) {
+      return 'Bajo';
+    }
+
+    return 'Ok';
+  }
+
+  getInventoryStatusClass(item: InventoryItem): string {
+    return item.quantity === 0
+      ? 'inventory-status inventory-status--empty'
+      : item.quantity <= item.minimum
+        ? 'inventory-status inventory-status--low'
+        : 'inventory-status inventory-status--ok';
+  }
+
   async updateOrderStatus(order: Order, status: OrderStatus): Promise<void> {
+    if (status === 'cancelled') {
+      this.pendingOrderCancellation.set(order);
+      return;
+    }
+
+    await this.applyOrderStatusUpdate(order, status);
+  }
+
+  cancelOrderCancellation(): void {
+    this.pendingOrderCancellation.set(null);
+  }
+
+  async confirmOrderCancellation(): Promise<void> {
+    const order = this.pendingOrderCancellation();
+    if (!order) {
+      return;
+    }
+
+    this.pendingOrderCancellation.set(null);
+    await this.applyOrderStatusUpdate(order, 'cancelled');
+  }
+
+  private async applyOrderStatusUpdate(order: Order, status: OrderStatus): Promise<void> {
     this.updatingOrderId.set(order.id);
     this.ownerOrderError.set('');
     this.ownerOrderSuccess.set('');
@@ -416,6 +584,21 @@ export class DashboardComponent {
 
   getOrderStatusClass(status: OrderStatus): string {
     return `verification-pill verification-pill--${status}`;
+  }
+
+  getPaymentMethodLabel(paymentMethod: string): string {
+    switch (paymentMethod) {
+      case 'card':
+        return 'Tarjeta';
+      case 'transfer':
+        return 'Transferencia';
+      default:
+        return 'Efectivo';
+    }
+  }
+
+  getPaymentStatusLabel(paymentStatus: string): string {
+    return paymentStatus === 'approved' ? 'Aprobado' : 'Pendiente';
   }
 
   getNextStatuses(order: Order): OrderStatus[] {

@@ -20,8 +20,11 @@ export interface Order {
   categoryId: string;
   quantity: number;
   unitPrice: number;
+  serviceFee: number;
   totalPrice: number;
   notes: string;
+  paymentMethod: string;
+  paymentStatus: string;
   status: OrderStatus;
   createdAtMs: number;
   updatedAtMs: number;
@@ -47,4 +50,3 @@ export const orderStatusLabelMap: Record<OrderStatus, string> = {
   delivered: 'Entregado',
   cancelled: 'Cancelado',
 };
-

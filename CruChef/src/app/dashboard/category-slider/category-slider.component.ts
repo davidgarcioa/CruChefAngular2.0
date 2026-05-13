@@ -13,5 +13,6 @@ import { Category } from '../../models/category.model';
 export class CategorySliderComponent {
   @Input({ required: true }) categories: Category[] = [];
   @Input({ required: true }) selectedCategoryId = 'all';
+  @Input() theme: 'red' | 'gold' = 'red';
   @Output() categoryChange = new EventEmitter<string>();
 }

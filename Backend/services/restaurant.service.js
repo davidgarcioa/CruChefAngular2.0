@@ -1,6 +1,8 @@
-const { db } = require('../config/firebase');
+const { admin, db } = require('../config/firebase');
 const { normalizeRestaurantPayload } = require('../utils/normalize-restaurant-payload');
 const { normalizeOwnerDishPayload } = require('../utils/normalize-owner-dish-payload');
+const { normalizeInventoryPayload } = require('../utils/normalize-inventory-payload');
+const notificationService = require('./notification.service');
 
 function ownerRestaurantsCollection(ownerUid) {
   return db.collection('users').doc(ownerUid).collection('restaurants');
@@ -12,6 +14,10 @@ function ownerRestaurantDocument(ownerUid, restaurantId) {
 
 function ownerDishesCollection(ownerUid, restaurantId) {
   return ownerRestaurantDocument(ownerUid, restaurantId).collection('dishes');
+}
+
+function ownerInventoryCollection(ownerUid, restaurantId) {
+  return ownerRestaurantDocument(ownerUid, restaurantId).collection('inventory');
 }
 
 async function deleteCollectionDocuments(collectionRef) {
@@ -76,6 +82,39 @@ function mapDish(document, restaurantId) {
   };
 }
 
+function mapInventoryItem(document) {
+  const data = document.data();
+
+  return {
+    id: document.id,
+    name: typeof data.name === 'string' ? data.name : '',
+    unit: typeof data.unit === 'string' ? data.unit : '',
+    quantity: Number(data.quantity || 0),
+    minimum: Number(data.minimum || 0),
+    updatedAt: data.updatedAt || null,
+  };
+}
+
+async function notifyInventoryIfNeeded(authUser, restaurant, item) {
+  if (item.quantity > item.minimum) {
+    return;
+  }
+
+  try {
+    await notificationService.createNotification({
+      recipientUid: authUser.uid,
+      audience: 'owner',
+      type: item.quantity === 0 ? 'inventory-empty' : 'inventory-low',
+      title: item.quantity === 0 ? 'Insumo agotado' : 'Inventario bajo',
+      message: `${item.name} esta en ${item.quantity} ${item.unit}. Minimo: ${item.minimum} ${item.unit}.`,
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+    });
+  } catch (error) {
+    console.error('No se pudo crear la notificacion de inventario.', error);
+  }
+}
+
 async function loadRestaurant(ownerUid, restaurantId) {
   const snapshot = await ownerRestaurantDocument(ownerUid, restaurantId).get();
 
@@ -137,6 +176,7 @@ async function deleteOwnerRestaurant(authUser, restaurantId) {
   }
 
   await deleteCollectionDocuments(ownerDishesCollection(authUser.uid, restaurantId));
+  await deleteCollectionDocuments(ownerInventoryCollection(authUser.uid, restaurantId));
   await deleteCollectionDocuments(documentRef.collection('orders'));
   await documentRef.delete();
   return true;
@@ -208,6 +248,79 @@ async function deleteOwnerDish(authUser, restaurantId, dishId) {
   return true;
 }
 
+async function listOwnerInventory(authUser, restaurantId) {
+  const restaurant = await loadRestaurant(authUser.uid, restaurantId);
+
+  if (!restaurant) {
+    return null;
+  }
+
+  const snapshot = await ownerInventoryCollection(authUser.uid, restaurantId).orderBy('name').get();
+  return snapshot.docs.map((document) => mapInventoryItem(document));
+}
+
+async function createOwnerInventoryItem(authUser, restaurantId, body = {}) {
+  const restaurant = await loadRestaurant(authUser.uid, restaurantId);
+
+  if (!restaurant) {
+    return null;
+  }
+
+  const payload = normalizeInventoryPayload(body);
+  const documentRef = await ownerInventoryCollection(authUser.uid, restaurantId).add({
+    ...payload,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const snapshot = await documentRef.get();
+  const item = mapInventoryItem(snapshot);
+  await notifyInventoryIfNeeded(authUser, { id: restaurantId, ...restaurant }, item);
+  return item;
+}
+
+async function updateOwnerInventoryItem(authUser, restaurantId, itemId, body = {}) {
+  const restaurant = await loadRestaurant(authUser.uid, restaurantId);
+
+  if (!restaurant) {
+    return null;
+  }
+
+  const documentRef = ownerInventoryCollection(authUser.uid, restaurantId).doc(itemId);
+  const snapshot = await documentRef.get();
+
+  if (!snapshot.exists) {
+    return false;
+  }
+
+  await documentRef.update({
+    ...normalizeInventoryPayload(body),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const updatedSnapshot = await documentRef.get();
+  const item = mapInventoryItem(updatedSnapshot);
+  await notifyInventoryIfNeeded(authUser, { id: restaurantId, ...restaurant }, item);
+  return item;
+}
+
+async function deleteOwnerInventoryItem(authUser, restaurantId, itemId) {
+  const restaurant = await loadRestaurant(authUser.uid, restaurantId);
+
+  if (!restaurant) {
+    return null;
+  }
+
+  const documentRef = ownerInventoryCollection(authUser.uid, restaurantId).doc(itemId);
+  const snapshot = await documentRef.get();
+
+  if (!snapshot.exists) {
+    return false;
+  }
+
+  await documentRef.delete();
+  return true;
+}
+
 async function listPublicRestaurants() {
   const snapshot = await db.collectionGroup('restaurants').get();
 
@@ -235,6 +348,10 @@ module.exports = {
   createOwnerDish,
   updateOwnerDish,
   deleteOwnerDish,
+  listOwnerInventory,
+  createOwnerInventoryItem,
+  updateOwnerInventoryItem,
+  deleteOwnerInventoryItem,
   listPublicRestaurants,
   listPublicDishes,
 };

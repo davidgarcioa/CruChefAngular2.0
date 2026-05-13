@@ -60,3 +60,159 @@ input {
     'GRAD' 0,
     'opsz' 24;
 }
+
+.inventory-stats,
+.inventory-layout,
+.inventory-items,
+.inventory-form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.inventory-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1.4rem;
+}
+
+.inventory-layout {
+  grid-template-columns: minmax(18rem, 0.78fr) minmax(0, 1.22fr);
+  gap: 1.4rem;
+  margin-top: 1.4rem;
+}
+
+.inventory-form-grid {
+  grid-template-columns: 1fr 0.85fr;
+}
+
+.inventory-stat,
+.inventory-panel,
+.inventory-item-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inventory-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.inventory-stat .material-symbols-outlined {
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffd166, #b76e2c);
+  color: #181818;
+}
+
+.inventory-stat p,
+.inventory-stat strong,
+.inventory-item-card h3,
+.inventory-item-card p {
+  margin: 0;
+}
+
+.inventory-stat p,
+.inventory-item-card p {
+  color: #bdbdbd;
+}
+
+.inventory-stat strong {
+  color: #ffffff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.inventory-panel {
+  padding: 1.5rem;
+}
+
+.inventory-form,
+.inventory-item-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.inventory-form {
+  align-self: start;
+}
+
+.inventory-list {
+  min-width: 0;
+}
+
+.inventory-items {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin-top: 1.2rem;
+}
+
+.inventory-item-card {
+  min-height: 14rem;
+  padding: 1rem;
+}
+
+.inventory-item-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.inventory-item-card h3 {
+  color: #ffffff;
+  font-size: 1.25rem;
+}
+
+.inventory-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.42rem 0.72rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.inventory-status--ok {
+  background: rgba(74, 222, 128, 0.16);
+  color: #86efac;
+}
+
+.inventory-status--low {
+  background: rgba(255, 209, 102, 0.18);
+  color: #ffd166;
+}
+
+.inventory-status--empty {
+  background: rgba(220, 38, 38, 0.18);
+  color: #fca5a5;
+}
+
+.inventory-amount {
+  color: #ffd166;
+}
+
+.inventory-amount strong {
+  font-size: 2.45rem;
+}
+
+.inventory-amount span {
+  margin-left: 0.4rem;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+  .inventory-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .inventory-stats,
+  .inventory-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

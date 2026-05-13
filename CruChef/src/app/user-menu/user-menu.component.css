@@ -95,6 +95,40 @@
   font-size: clamp(1.7rem, 2.2vw, 2.3rem);
 }
 
+.restaurant-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.restaurant-fact {
+  min-width: 0;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.restaurant-fact span,
+.restaurant-fact strong {
+  display: block;
+}
+
+.restaurant-fact span {
+  color: #8a8a8a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.restaurant-fact strong {
+  margin-top: 0.28rem;
+  color: #ffffff;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .focus-copy p:last-child,
 .section-heading p,
 .empty-state p:last-child,
@@ -106,8 +140,9 @@
 
 .restaurant-switcher {
   display: flex;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1.1rem;
 }
 
 .status-banner {
@@ -139,25 +174,64 @@
   color: #a7efc1;
 }
 
-.restaurant-pill {
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  color: #ffffff;
+.restaurant-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  width: 7.8rem;
+  min-height: 8.8rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #bdbdbd;
   font: inherit;
+  text-align: center;
   cursor: pointer;
-  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  transition: color 180ms ease, transform 180ms ease;
 }
 
-.restaurant-pill:hover {
-  transform: translateY(-1px);
-  border-color: rgba(230, 81, 81, 0.45);
+.restaurant-card:hover {
+  transform: scale(1.06);
+  color: #ffffff;
 }
 
-.restaurant-pill.is-active {
-  background: linear-gradient(135deg, rgba(230, 81, 81, 0.9), rgba(183, 61, 61, 0.9));
-  border-color: transparent;
+.restaurant-card.is-active {
+  color: #ffffff;
+}
+
+.restaurant-icon {
+  width: 5.1rem;
+  height: 5.1rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #333333;
+  color: #ffffff;
+  font-size: 2rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.restaurant-card.is-active .restaurant-icon {
+  background: linear-gradient(145deg, #e65151, #b73d3d);
+}
+
+.restaurant-card__body {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.restaurant-card__name {
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.restaurant-card__meta {
+  color: #bdbdbd;
+  font-size: 0.78rem;
+  line-height: 1.25;
 }
 
 .section-heading {
@@ -247,15 +321,18 @@
 
 .dish-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  grid-auto-rows: 1fr;
   gap: 1.2rem;
-  align-items: start;
+  align-items: stretch;
   padding-top: 3.6rem;
 }
 
 .dish-item {
   display: grid;
+  grid-template-rows: 1fr auto;
   gap: 0.75rem;
+  min-height: 22rem;
 }
 
 .action-button {
@@ -266,6 +343,10 @@
   cursor: pointer;
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
+}
+
+.dish-item .action-button {
+  min-height: 3.65rem;
 }
 
 .action-button--primary {
@@ -301,6 +382,36 @@
   gap: 1rem;
 }
 
+.checkout-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+}
+
+.checkout-steps button {
+  min-height: 2.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #bdbdbd;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.checkout-steps button.is-active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #e65151, #b73d3d);
+  color: #ffffff;
+}
+
+.checkout-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .field {
   display: grid;
   gap: 0.45rem;
@@ -332,6 +443,107 @@
 .field small {
   color: #ff9c9c;
   font-size: 0.82rem;
+}
+
+.payment-options {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.payment-option {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 5.3rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.payment-option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.payment-option:has(input:checked) {
+  border-color: rgba(230, 81, 81, 0.55);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    rgba(230, 81, 81, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(230, 81, 81, 0.18);
+}
+
+.payment-option .material-symbols-outlined {
+  flex: 0 0 auto;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #333333;
+  color: #ffffff;
+}
+
+.payment-option:has(input:checked) .material-symbols-outlined {
+  background: linear-gradient(145deg, #e65151, #b73d3d);
+}
+
+.payment-option__copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.payment-option__copy strong,
+.payment-option__copy small {
+  display: block;
+}
+
+.payment-option__copy strong {
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.payment-option__copy small {
+  color: #bdbdbd;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.checkout-summary {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.checkout-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkout-summary span {
+  color: #bdbdbd;
+}
+
+.checkout-summary strong {
+  color: #ffffff;
+}
+
+.checkout-summary__total strong {
+  color: #ffd166;
+  font-size: 1.1rem;
+}
+
+.checkout-note {
+  margin: 0;
+  color: #bdbdbd;
+  line-height: 1.5;
 }
 
 .action-row {
@@ -406,5 +618,13 @@
     grid-template-columns: 1fr;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .restaurant-card {
+    justify-items: center;
+  }
+
+  .restaurant-facts {
+    grid-template-columns: 1fr;
   }
 }

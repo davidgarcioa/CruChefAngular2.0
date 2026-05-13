@@ -47,6 +47,11 @@
   background: linear-gradient(145deg, #e65151, #b73d3d);
 }
 
+.categories--gold .category-chip.is-active .category-icon {
+  background: linear-gradient(145deg, #ffd166, #b76e2c);
+  color: #191919;
+}
+
 .category-name {
   font-size: 0.92rem;
   font-weight: 600;

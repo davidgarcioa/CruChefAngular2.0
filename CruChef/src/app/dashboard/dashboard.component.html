@@ -1,5 +1,5 @@
 <main class="main-layout">
-  <app-sidebar [items]="navigationItems" />
+  <app-sidebar [items]="navigationItems" settingsRoute="/owner/settings" role="owner" />
 
   <section class="content-shell">
     <header class="content-header">
@@ -23,57 +23,146 @@
         <app-category-slider
           [categories]="categories"
           [selectedCategoryId]="selectedCategoryId()"
+          theme="gold"
           (categoryChange)="selectedCategoryId.set($event)"
         />
       </section>
 
       <section class="owner-layout section-block fade-slide delay-1">
-        <section class="restaurants-panel restaurants-panel--summary">
-          <div class="section-heading section-heading--stacked">
-            <div>
-              <h2>Tu restaurante</h2>
-              <p><span>Propietario</span> ya no crea restaurantes desde esta ventana.</p>
+        <div class="owner-side">
+          <section class="restaurants-panel restaurants-panel--summary">
+            <div class="section-heading section-heading--stacked">
+              <div>
+                <h2>Tu restaurante</h2>
+                <p><span>Propietario</span> ya no crea restaurantes desde esta ventana.</p>
+              </div>
             </div>
-          </div>
 
-          @if (restaurants().length > 0) {
-            <div class="restaurant-list">
-              @for (restaurant of restaurants(); track restaurant.id) {
-                <article
-                  class="restaurant-card"
-                  [class.is-selected]="restaurant.id === selectedRestaurantId()"
-                  (click)="selectRestaurant(restaurant.id)"
-                >
-                  <div class="restaurant-card__top">
-                    <div>
-                      <h3>{{ restaurant.name }}</h3>
-                      <p>{{ restaurant.city }} - {{ restaurant.phone }}</p>
+            @if (restaurants().length > 0) {
+              <div class="restaurant-list">
+                @for (restaurant of restaurants(); track restaurant.id) {
+                  <article
+                    class="restaurant-card"
+                    [class.is-selected]="restaurant.id === selectedRestaurantId()"
+                    (click)="selectRestaurant(restaurant.id)"
+                  >
+                    <div class="restaurant-card__top">
+                      <div>
+                        <h3>{{ restaurant.name }}</h3>
+                        <p>{{ restaurant.city }} - {{ restaurant.phone }}</p>
+                      </div>
+                      <span
+                        class="verification-pill"
+                        [class.verification-pill--verified]="restaurant.verificationStatus === 'verified'"
+                        [class.verification-pill--pending]="restaurant.verificationStatus !== 'verified'"
+                      >
+                        {{ restaurant.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
+                      </span>
                     </div>
-                    <span
-                      class="verification-pill"
-                      [class.verification-pill--verified]="restaurant.verificationStatus === 'verified'"
-                      [class.verification-pill--pending]="restaurant.verificationStatus !== 'verified'"
-                    >
-                      {{ restaurant.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
-                    </span>
-                  </div>
 
-                  <p>{{ restaurant.address }}</p>
-                  <p>{{ restaurant.schedule }}</p>
-                  <p>RUT: {{ restaurant.rut }}</p>
-                  <p>Correo vinculado: {{ restaurant.ownerEmail }}</p>
-                </article>
-              }
+                    <p>{{ restaurant.address }}</p>
+                    <p>{{ restaurant.schedule }}</p>
+                    <p>RUT: {{ restaurant.rut }}</p>
+                    <p>Correo vinculado: {{ restaurant.ownerEmail }}</p>
+                  </article>
+                }
+              </div>
+            } @else {
+              <div class="empty-card">
+                <h3>No tienes restaurantes creados</h3>
+                <p>
+                  Primero completa el flujo de propietario para crear tu restaurante.
+                </p>
+              </div>
+            }
+          </section>
+
+          <section class="qr-panel">
+            <div class="section-heading section-heading--stacked">
+              <div>
+                <h2>QR del Restaurante</h2>
+                <p>
+                  @if (selectedRestaurant()) {
+                    <span>Menu publico de {{ selectedRestaurant()!.name }}</span>
+                  } @else {
+                    <span>Selecciona un restaurante</span> para generar su codigo QR.
+                  }
+                </p>
+              </div>
             </div>
-          } @else {
-            <div class="empty-card">
-              <h3>No tienes restaurantes creados</h3>
-              <p>
-                Primero completa el flujo de propietario para crear tu restaurante.
-              </p>
-            </div>
-          }
-        </section>
+
+            @if (selectedRestaurant()) {
+              <div class="qr-container">
+                @if (qrError()) {
+                  <p class="status-message status-message--error">{{ qrError() }}</p>
+                }
+
+                @if (qrDataUrl()) {
+                  <div class="qr-content">
+                    <div class="qr-image-wrapper">
+                      <img class="qr-image" [src]="qrDataUrl()" [alt]="'QR de ' + selectedRestaurant()!.name" />
+                    </div>
+
+                    <div class="qr-details">
+                      <p class="eyebrow">Listo para compartir</p>
+                      <h3>{{ selectedRestaurant()!.name }}</h3>
+                      <p>
+                        Tus clientes escanean este codigo para abrir el menu publico y hacer su
+                        pedido. Cuando despliegues CruChef, el QR usara el dominio final.
+                      </p>
+
+                      <div class="qr-actions">
+                        <a class="secondary-button" [href]="qrPublicUrl()" target="_blank" rel="noopener">
+                          Abrir menu
+                        </a>
+
+                        <button
+                          type="button"
+                          class="primary-button"
+                          (click)="generateRestaurantQr(selectedRestaurant()!)"
+                          [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
+                        >
+                          {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Regenerar QR' }}
+                        </button>
+
+                        <a
+                          class="secondary-button"
+                          [download]="'qr-' + selectedRestaurant()!.name + '.png'"
+                          [href]="qrDataUrl()"
+                          role="button"
+                        >
+                          Descargar PNG
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="qr-empty">
+                    <span class="material-symbols-outlined" aria-hidden="true">qr_code_2</span>
+                    <h3>QR listo para generar</h3>
+                    <p>
+                      Crea un QR conectado al menu publico del restaurante. Al desplegar, funcionara
+                      con el dominio final de la pagina.
+                    </p>
+                    <button
+                      type="button"
+                      class="primary-button"
+                      (click)="generateRestaurantQr(selectedRestaurant()!)"
+                      [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
+                    >
+                      {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Generar QR' }}
+                    </button>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-card">
+                <h3>Sin restaurante activo</h3>
+                <p>Selecciona un restaurante para generar su codigo QR.</p>
+              </div>
+            }
+          </section>
+        </div>
 
         <section class="crud-panel">
           <div class="section-heading section-heading--stacked">
@@ -173,81 +262,6 @@
               <p>
                 El CRUD de platos quedara anidado en Firebase bajo el restaurante que tengas activo.
               </p>
-            </div>
-          }
-        </section>
-
-        <section class="qr-panel">
-          <div class="section-heading section-heading--stacked">
-            <div>
-              <h2>QR del Restaurante</h2>
-              <p>
-                @if (selectedRestaurant()) {
-                  <span>Código QR para {{ selectedRestaurant()!.name }}</span>
-                } @else {
-                  <span>Selecciona un restaurante</span> para generar su código QR.
-                }
-              </p>
-            </div>
-          </div>
-
-          @if (selectedRestaurant()) {
-            <div class="qr-container">
-              @if (qrError()) {
-                <p class="status-message status-message--error">{{ qrError() }}</p>
-              }
-
-              @if (qrDataUrl()) {
-                <div class="qr-content">
-                  <div class="qr-image-wrapper">
-                    <img class="qr-image" [src]="qrDataUrl()" [alt]="'QR de ' + selectedRestaurant()!.name" />
-                  </div>
-
-                  <div class="qr-details">
-                    <p class="qr-url-label">URL pública del menú:</p>
-                    <a class="qr-url-link" [href]="qrPublicUrl()" target="_blank" rel="noopener">
-                      {{ qrPublicUrl() }}
-                    </a>
-
-                    <div class="qr-actions">
-                      <button
-                        type="button"
-                        class="primary-button"
-                        (click)="generateRestaurantQr(selectedRestaurant()!)"
-                        [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
-                      >
-                        {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Regenerar QR' }}
-                      </button>
-
-                      <a
-                        class="secondary-button"
-                        [download]="'qr-' + selectedRestaurant()!.name + '.png'"
-                        [href]="qrDataUrl()"
-                        role="button"
-                      >
-                        Descargar PNG
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              } @else {
-                <div class="qr-empty">
-                  <p>No hay QR generado aún. Haz click en el botón para crear uno.</p>
-                  <button
-                    type="button"
-                    class="primary-button"
-                    (click)="generateRestaurantQr(selectedRestaurant()!)"
-                    [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
-                  >
-                    {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Generar QR' }}
-                  </button>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="empty-card">
-              <h3>Sin restaurante activo</h3>
-              <p>Selecciona un restaurante para generar su código QR.</p>
             </div>
           }
         </section>
@@ -394,6 +408,10 @@
                       {{ order.unitPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
                     </p>
                     <p>Total: {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+                    <p>
+                      Pago: {{ getPaymentMethodLabel(order.paymentMethod) }} -
+                      {{ getPaymentStatusLabel(order.paymentStatus) }}
+                    </p>
                     <p>Creado: {{ order.createdAtMs | date: 'short' }}</p>
                     @if (order.notes) {
                       <p>Indicaciones: {{ order.notes }}</p>
@@ -480,6 +498,10 @@
                       Total: {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
                     </p>
                     <p>Pedido: {{ order.createdAtMs | date: 'short' }}</p>
+                    <p>
+                      Pago: {{ getPaymentMethodLabel(order.paymentMethod) }} -
+                      {{ getPaymentStatusLabel(order.paymentStatus) }}
+                    </p>
                     @if (order.deliveredAtMs) {
                       <p>Entregado: {{ order.deliveredAtMs | date: 'short' }}</p>
                     }
@@ -498,6 +520,186 @@
           <div class="empty-card">
             <h3>No hay historial todavia</h3>
             <p>Los pedidos entregados o cancelados apareceran aqui con la reseña del usuario.</p>
+          </div>
+        }
+      </section>
+    } @else if (currentView() === 'inventory') {
+      <section class="section-block fade-slide">
+        <div class="section-heading">
+          <div>
+            <h2>Inventario</h2>
+            <p>
+              @if (selectedRestaurant()) {
+                <span>{{ selectedRestaurant()!.name }}</span> como restaurante activo.
+              } @else {
+                <span>Selecciona</span> un restaurante para registrar insumos.
+              }
+            </p>
+          </div>
+        </div>
+
+        @if (restaurants().length > 0) {
+          <div class="order-filter">
+            @for (restaurant of restaurants(); track restaurant.id) {
+              <button
+                type="button"
+                class="restaurant-filter-pill"
+                [class.is-active]="selectedRestaurantId() === restaurant.id"
+                (click)="selectRestaurant(restaurant.id)"
+              >
+                {{ restaurant.name }}
+              </button>
+            }
+          </div>
+        }
+
+        @if (inventorySuccess()) {
+          <p class="status-message status-message--success">{{ inventorySuccess() }}</p>
+        }
+
+        @if (inventoryError()) {
+          <p class="status-message status-message--error">{{ inventoryError() }}</p>
+        }
+
+        @if (selectedRestaurant()) {
+          <div class="inventory-stats">
+            <article class="inventory-stat">
+              <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+              <div>
+                <p>Total insumos</p>
+                <strong>{{ inventoryItems().length }}</strong>
+              </div>
+            </article>
+
+            <article class="inventory-stat">
+              <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+              <div>
+                <p>Bajo minimo</p>
+                <strong>{{ lowInventoryItems().length }}</strong>
+              </div>
+            </article>
+
+            <article class="inventory-stat">
+              <span class="material-symbols-outlined" aria-hidden="true">remove_shopping_cart</span>
+              <div>
+                <p>Agotados</p>
+                <strong>{{ emptyInventoryItems().length }}</strong>
+              </div>
+            </article>
+          </div>
+
+          <div class="inventory-layout">
+            <form class="inventory-panel inventory-form" [formGroup]="inventoryForm" (ngSubmit)="submitInventoryItem()">
+              <div class="section-heading section-heading--stacked">
+                <div>
+                  <h2>{{ editingInventoryItemId() ? 'Editar insumo' : 'Registrar insumo' }}</h2>
+                  <p>Control simple de cantidad actual y punto minimo.</p>
+                </div>
+              </div>
+
+              <label class="field">
+                <span>Insumo</span>
+                <input type="text" formControlName="name" placeholder="Ej. Tomate, queso, arroz" />
+                @if (inventoryForm.controls.name.touched && inventoryForm.controls.name.invalid) {
+                  <small>Escribe un nombre valido para el insumo.</small>
+                }
+              </label>
+
+              <div class="inventory-form-grid">
+                <label class="field">
+                  <span>Cantidad</span>
+                  <input type="number" formControlName="quantity" min="0" step="1" />
+                  @if (inventoryForm.controls.quantity.touched && inventoryForm.controls.quantity.invalid) {
+                    <small>No puede ser negativa.</small>
+                  }
+                </label>
+
+                <label class="field">
+                  <span>Unidad</span>
+                  <input type="text" formControlName="unit" placeholder="kg, unid, litros" />
+                  @if (inventoryForm.controls.unit.touched && inventoryForm.controls.unit.invalid) {
+                    <small>La unidad es obligatoria.</small>
+                  }
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Minimo para alerta</span>
+                <input type="number" formControlName="minimum" min="0" step="1" />
+                @if (inventoryForm.controls.minimum.touched && inventoryForm.controls.minimum.invalid) {
+                  <small>El minimo debe ser cero o mayor.</small>
+                }
+              </label>
+
+              <div class="form-actions">
+                <button type="submit" class="primary-button">
+                  {{ editingInventoryItemId() ? 'Actualizar' : 'Guardar' }}
+                </button>
+
+                @if (editingInventoryItemId()) {
+                  <button type="button" class="secondary-button" (click)="resetInventoryForm()">
+                    Cancelar
+                  </button>
+                }
+              </div>
+            </form>
+
+            <section class="inventory-panel inventory-list">
+              <div class="section-heading section-heading--stacked">
+                <div>
+                  <h2>Insumos</h2>
+                  <p>Las alertas se activan al llegar al minimo registrado.</p>
+                </div>
+              </div>
+
+              @if (inventoryItems().length > 0) {
+                <div class="inventory-items">
+                  @for (item of inventoryItems(); track item.id) {
+                    <article class="inventory-item-card">
+                      <div class="inventory-item-card__top">
+                        <div>
+                          <h3>{{ item.name }}</h3>
+                          <p>Minimo: {{ item.minimum }} {{ item.unit }}</p>
+                        </div>
+                        <span [class]="getInventoryStatusClass(item)">{{ getInventoryStatus(item) }}</span>
+                      </div>
+
+                      <div class="inventory-amount">
+                        <strong>{{ item.quantity }}</strong>
+                        <span>{{ item.unit }}</span>
+                      </div>
+
+                      @if (item.updatedAtMs) {
+                        <p class="inventory-updated">Actualizado {{ item.updatedAtMs | date: 'short' }}</p>
+                      }
+
+                      <div class="dish-actions">
+                        <button type="button" class="mini-button" (click)="editInventoryItem(item)">
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          class="mini-button mini-button--danger"
+                          (click)="deleteInventoryItem(item.id)"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-card">
+                  <h3>Inventario vacio</h3>
+                  <p>Registra tus primeros insumos para recibir alertas cuando bajen del minimo.</p>
+                </div>
+              }
+            </section>
+          </div>
+        } @else {
+          <div class="empty-card">
+            <h3>Sin restaurante activo</h3>
+            <p>Selecciona un restaurante para empezar a controlar su inventario.</p>
           </div>
         }
       </section>
@@ -671,4 +873,57 @@
       }
     }
   </section>
+
+  @if (pendingOrderCancellation()) {
+    <div class="confirm-backdrop" role="presentation">
+      <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
+        <span class="confirm-icon material-symbols-outlined" aria-hidden="true">warning</span>
+        <p class="eyebrow">Confirmar cancelacion</p>
+        <h2 id="cancel-order-title">Cancelar pedido</h2>
+        <p>
+          Vas a cancelar el pedido de <strong>{{ pendingOrderCancellation()!.customerName }}</strong>
+          por <strong>{{ pendingOrderCancellation()!.dishName }}</strong>. El usuario recibira una
+          notificacion con el cambio de estado.
+        </p>
+
+        <div class="confirm-summary">
+          <span>{{ pendingOrderCancellation()!.restaurantName }}</span>
+          <strong>
+            {{ pendingOrderCancellation()!.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+          </strong>
+        </div>
+
+        <div class="confirm-actions">
+          <button type="button" class="secondary-button" (click)="cancelOrderCancellation()">
+            Volver
+          </button>
+          <button type="button" class="danger-button" (click)="confirmOrderCancellation()">
+            Cancelar pedido
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (pendingDishDeletionId()) {
+    <div class="confirm-backdrop" role="presentation">
+      <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dish-title">
+        <span class="confirm-icon material-symbols-outlined" aria-hidden="true">delete</span>
+        <p class="eyebrow">Eliminar plato</p>
+        <h2 id="delete-dish-title">Esta accion no se puede deshacer</h2>
+        <p>
+          El plato se quitara del restaurante activo y ya no aparecera en el menu publico.
+        </p>
+
+        <div class="confirm-actions">
+          <button type="button" class="secondary-button" (click)="cancelDishDeletion()">
+            Volver
+          </button>
+          <button type="button" class="danger-button" (click)="confirmDishDeletion()">
+            Eliminar plato
+          </button>
+        </div>
+      </section>
+    </div>
+  }
 </main>

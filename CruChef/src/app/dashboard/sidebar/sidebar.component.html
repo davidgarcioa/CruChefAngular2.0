@@ -1,4 +1,4 @@
-<aside class="sidebar">
+<aside class="sidebar" [class.sidebar--owner]="role === 'owner'">
   <div class="brand">
     <div class="brand-mark" aria-hidden="true">
       <span class="material-symbols-outlined">restaurant</span>
@@ -24,11 +24,24 @@
   </nav>
 
   <div class="sidebar-footer">
-    <button type="button" class="footer-action" aria-label="Configuracion">
+    <button
+      type="button"
+      class="footer-action"
+      aria-label="Configuracion"
+      (click)="goToSettings()"
+    >
       <span class="material-symbols-outlined">settings</span>
     </button>
-    <button type="button" class="footer-action" aria-label="Notificaciones">
+    <button
+      type="button"
+      class="footer-action footer-action--notification"
+      aria-label="Notificaciones"
+      (click)="toggleNotifications()"
+    >
       <span class="material-symbols-outlined">notifications</span>
+      @if (unreadCount() > 0) {
+        <span class="notification-badge">{{ unreadCount() }}</span>
+      }
     </button>
     <button
       type="button"
@@ -39,4 +52,45 @@
       <span class="material-symbols-outlined">logout</span>
     </button>
   </div>
+
+  @if (isNotificationsOpen()) {
+    <section class="notifications-panel">
+      <div class="notifications-panel__header">
+        <div>
+          <p class="panel-eyebrow">Notificaciones</p>
+          <h2>{{ unreadCount() }} sin leer</h2>
+        </div>
+
+        @if (unreadCount() > 0) {
+          <button type="button" class="panel-action" (click)="markAllNotificationsAsRead()">
+            Leer todo
+          </button>
+        }
+      </div>
+
+      @if (notificationsError()) {
+        <p class="notification-empty">{{ notificationsError() }}</p>
+      } @else if (visibleNotifications().length > 0) {
+        <div class="notification-list">
+          @for (notification of visibleNotifications(); track notification.id) {
+            <button
+              type="button"
+              class="notification-item"
+              [class.is-unread]="!notification.read"
+              (click)="openNotification(notification)"
+            >
+              <span class="notification-dot" aria-hidden="true"></span>
+              <span>
+                <strong>{{ notification.title }}</strong>
+                <small>{{ notification.message }}</small>
+                <time>{{ notification.createdAtMs | date: 'short' }}</time>
+              </span>
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="notification-empty">Aun no tienes notificaciones.</p>
+      }
+    </section>
+  }
 </aside>

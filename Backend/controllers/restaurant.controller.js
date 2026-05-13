@@ -9,6 +9,10 @@ const validationMessages = new Set([
   'El RUT del restaurante debe tener al menos 6 caracteres.',
   'El nombre del plato debe tener al menos 2 caracteres.',
   'El precio del plato debe ser mayor o igual a 1000.',
+  'El nombre del insumo debe tener al menos 2 caracteres.',
+  'La unidad del insumo es obligatoria.',
+  'La cantidad del insumo no es valida.',
+  'El minimo del insumo no es valido.',
   'restaurant-required',
 ]);
 
@@ -201,6 +205,87 @@ async function deleteOwnerDish(req, res) {
   }
 }
 
+async function getOwnerInventory(req, res) {
+  try {
+    const items = await restaurantService.listOwnerInventory(req.authUser, req.params.restaurantId);
+
+    if (items === null) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    return res.json(items);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(error, 'No se pudo cargar el inventario.');
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function postOwnerInventoryItem(req, res) {
+  try {
+    const item = await restaurantService.createOwnerInventoryItem(
+      req.authUser,
+      req.params.restaurantId,
+      req.body,
+    );
+
+    if (item === null) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    return res.status(201).json(item);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(error, 'No se pudo crear el insumo.');
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function putOwnerInventoryItem(req, res) {
+  try {
+    const item = await restaurantService.updateOwnerInventoryItem(
+      req.authUser,
+      req.params.restaurantId,
+      req.params.itemId,
+      req.body,
+    );
+
+    if (item === null) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    if (item === false) {
+      return res.status(404).json({ message: 'El insumo no existe.' });
+    }
+
+    return res.json(item);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(error, 'No se pudo actualizar el insumo.');
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function deleteOwnerInventoryItem(req, res) {
+  try {
+    const result = await restaurantService.deleteOwnerInventoryItem(
+      req.authUser,
+      req.params.restaurantId,
+      req.params.itemId,
+    );
+
+    if (result === null) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    if (result === false) {
+      return res.status(404).json({ message: 'El insumo no existe.' });
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(error, 'No se pudo eliminar el insumo.');
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
 module.exports = {
   getOwnerRestaurants,
   postOwnerRestaurant,
@@ -210,4 +295,8 @@ module.exports = {
   postOwnerDish,
   putOwnerDish,
   deleteOwnerDish,
+  getOwnerInventory,
+  postOwnerInventoryItem,
+  putOwnerInventoryItem,
+  deleteOwnerInventoryItem,
 };

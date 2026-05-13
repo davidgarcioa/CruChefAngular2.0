@@ -1,0 +1,233 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #121212 0%, #171717 100%);
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 100vh;
+}
+
+.content-shell {
+  min-width: 0;
+  padding: 2rem 2.4rem;
+  color: #ffffff;
+}
+
+.settings-hero,
+.account-panel,
+.preference-panel,
+.preference-card {
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    #1e1e1e;
+  box-shadow: 0 22px 38px rgba(0, 0, 0, 0.22);
+}
+
+.settings-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.6rem;
+}
+
+.main-layout--owner .settings-hero,
+.main-layout--owner .account-panel,
+.main-layout--owner .preference-panel {
+  border: 1px solid rgba(255, 209, 102, 0.08);
+}
+
+.main-layout--owner .settings-hero {
+  background:
+    linear-gradient(180deg, rgba(255, 209, 102, 0.055), transparent 42%),
+    #1e1e1e;
+}
+
+.settings-hero h1,
+.account-panel h2,
+.section-heading h2,
+.preference-card h3 {
+  margin: 0;
+}
+
+.settings-hero h1 {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.settings-hero p,
+.account-panel p,
+.section-heading p,
+.preference-card p {
+  margin: 0.65rem 0 0;
+  color: #bdbdbd;
+  line-height: 1.6;
+}
+
+.eyebrow {
+  margin: 0 0 0.45rem;
+  color: #828282;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #e65151, #b73d3d);
+  color: #ffffff;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.main-layout--owner .hero-action {
+  background: linear-gradient(135deg, #ffd166, #b76e2c);
+  color: #191919;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(17rem, 22rem) 1fr;
+  gap: 1.4rem;
+  margin-top: 2rem;
+  align-items: start;
+}
+
+.account-panel,
+.preference-panel {
+  padding: 1.45rem;
+}
+
+.profile-mark,
+.preference-icon {
+  width: 5.1rem;
+  height: 5.1rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #333333;
+  color: #ffffff;
+  font-size: 2rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.profile-mark {
+  margin-bottom: 1.2rem;
+  background: linear-gradient(145deg, #e65151, #b73d3d);
+}
+
+.main-layout--owner .profile-mark,
+.main-layout--owner .preference-card:hover .preference-icon {
+  background: linear-gradient(145deg, #ffd166, #b76e2c);
+  color: #191919;
+}
+
+.main-layout--owner .account-grid article {
+  border-left: 3px solid rgba(255, 209, 102, 0.7);
+}
+
+.main-layout--owner .preference-card {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.main-layout--owner .preference-card:nth-child(3) {
+  border-bottom-color: rgba(230, 81, 81, 0.28);
+}
+
+.account-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+}
+
+.account-grid article {
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.account-grid span,
+.account-grid strong {
+  display: block;
+}
+
+.account-grid span {
+  color: #8a8a8a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.account-grid strong {
+  margin-top: 0.25rem;
+  color: #ffffff;
+}
+
+.section-heading {
+  margin-bottom: 1.4rem;
+}
+
+.preference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.preference-card {
+  min-height: 13rem;
+  padding: 1.2rem;
+}
+
+.preference-card:hover .preference-icon {
+  background: linear-gradient(145deg, #e65151, #b73d3d);
+}
+
+.preference-card h3 {
+  margin-top: 1rem;
+}
+
+.fade-slide {
+  animation: fadeSlide 480ms ease both;
+}
+
+.delay-1 {
+  animation-delay: 100ms;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .main-layout,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-shell {
+    padding: 1.5rem;
+  }
+
+  .settings-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

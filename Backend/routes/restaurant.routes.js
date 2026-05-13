@@ -8,6 +8,10 @@ const {
   postOwnerDish,
   putOwnerDish,
   deleteOwnerDish,
+  getOwnerInventory,
+  postOwnerInventoryItem,
+  putOwnerInventoryItem,
+  deleteOwnerInventoryItem,
 } = require('../controllers/restaurant.controller');
 const { requireFirestore } = require('../middleware/require-firestore');
 const { requireAuth } = require('../middleware/require-auth');
@@ -51,6 +55,30 @@ router.delete(
   requireFirestore,
   requireAuth,
   deleteOwnerDish,
+);
+router.get(
+  '/owner/restaurants/:restaurantId/inventory',
+  requireFirestore,
+  requireAuth,
+  getOwnerInventory,
+);
+router.post(
+  '/owner/restaurants/:restaurantId/inventory',
+  requireFirestore,
+  requireAuth,
+  postOwnerInventoryItem,
+);
+router.put(
+  '/owner/restaurants/:restaurantId/inventory/:itemId',
+  requireFirestore,
+  requireAuth,
+  putOwnerInventoryItem,
+);
+router.delete(
+  '/owner/restaurants/:restaurantId/inventory/:itemId',
+  requireFirestore,
+  requireAuth,
+  deleteOwnerInventoryItem,
 );
 
 module.exports = router;

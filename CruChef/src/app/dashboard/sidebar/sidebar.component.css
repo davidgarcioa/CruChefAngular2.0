@@ -16,6 +16,12 @@
   box-shadow: 24px 0 60px rgba(0, 0, 0, 0.24);
 }
 
+.sidebar--owner {
+  background:
+    radial-gradient(circle at top left, rgba(255, 209, 102, 0.18), transparent 34%),
+    linear-gradient(180deg, #202020 0%, #171717 100%);
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -102,6 +108,14 @@
   color: #e65151;
 }
 
+.sidebar--owner .nav-link.is-active .nav-indicator {
+  background: #ffd166;
+}
+
+.sidebar--owner .nav-link.is-active .nav-icon {
+  color: #ffd166;
+}
+
 .sidebar-footer {
   margin-top: auto;
   display: flex;
@@ -110,6 +124,7 @@
 }
 
 .footer-action {
+  position: relative;
   width: 2.75rem;
   height: 2.75rem;
   border: 0;
@@ -129,6 +144,174 @@
   background: rgba(230, 81, 81, 0.42);
 }
 
+.sidebar--owner .footer-action {
+  background: rgba(255, 209, 102, 0.18);
+  color: #ffd166;
+}
+
+.sidebar--owner .footer-action:hover {
+  background: rgba(255, 209, 102, 0.32);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.32rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #ffd166;
+  color: #191919;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.sidebar--owner .notification-badge {
+  background: #e65151;
+  color: #ffffff;
+}
+
+.notifications-panel {
+  position: absolute;
+  left: calc(100% + 1rem);
+  bottom: 1.25rem;
+  z-index: 20;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.4rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 35%),
+    #1e1e1e;
+  box-shadow: 0 26px 48px rgba(0, 0, 0, 0.36);
+}
+
+.sidebar--owner .notifications-panel {
+  border-color: rgba(255, 209, 102, 0.16);
+}
+
+.notifications-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.panel-eyebrow,
+.notifications-panel h2 {
+  margin: 0;
+}
+
+.panel-eyebrow {
+  color: #828282;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.notifications-panel h2 {
+  margin-top: 0.2rem;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.panel-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.55rem 0.75rem;
+  background: rgba(230, 81, 81, 0.16);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sidebar--owner .panel-action {
+  background: rgba(255, 209, 102, 0.18);
+  color: #ffd166;
+}
+
+.notification-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.notification-item {
+  display: grid;
+  grid-template-columns: 0.65rem 1fr;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-item.is-unread {
+  border-color: rgba(230, 81, 81, 0.28);
+  background: rgba(230, 81, 81, 0.08);
+}
+
+.sidebar--owner .notification-item.is-unread {
+  border-color: rgba(255, 209, 102, 0.3);
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.notification-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.32rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.notification-item.is-unread .notification-dot {
+  background: #e65151;
+}
+
+.sidebar--owner .notification-item.is-unread .notification-dot {
+  background: #ffd166;
+}
+
+.notification-item strong,
+.notification-item small,
+.notification-item time {
+  display: block;
+}
+
+.notification-item strong {
+  font-size: 0.9rem;
+}
+
+.notification-item small {
+  margin-top: 0.25rem;
+  color: #bdbdbd;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.notification-item time {
+  margin-top: 0.38rem;
+  color: #828282;
+  font-size: 0.74rem;
+}
+
+.notification-empty {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #bdbdbd;
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .sidebar {
     min-height: auto;
@@ -142,5 +325,11 @@
 
   .nav-link {
     flex: 1 1 12rem;
+  }
+
+  .notifications-panel {
+    position: static;
+    width: 100%;
+    margin-top: 1rem;
   }
 }

@@ -1,0 +1,84 @@
+<main class="main-layout" [class.main-layout--owner]="isOwner()">
+  <app-sidebar
+    [items]="navigationItems()"
+    [settingsRoute]="settingsRoute()"
+    [role]="role()"
+  />
+
+  <section class="content-shell">
+    <header class="settings-hero fade-slide">
+      <div>
+        <p class="eyebrow">
+          {{ isOwner() ? 'Configuracion de propietario' : 'Configuracion de usuario' }}
+        </p>
+        <h1>{{ isOwner() ? 'Centro de operacion' : 'Preferencias de cliente' }}</h1>
+        <p>
+          {{
+            isOwner()
+              ? 'Ajustes pensados para administrar restaurantes, catalogo y pedidos.'
+              : 'Ajustes pensados para pedir, revisar historial y calificar restaurantes.'
+          }}
+        </p>
+      </div>
+
+      <a class="hero-action" [routerLink]="homeRoute()">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ isOwner() ? 'storefront' : 'restaurant_menu' }}
+        </span>
+        Volver
+      </a>
+    </header>
+
+    <section class="settings-layout fade-slide delay-1">
+      <article class="account-panel">
+        <div class="profile-mark" aria-hidden="true">
+          <span class="material-symbols-outlined">
+            {{ isOwner() ? 'admin_panel_settings' : 'person' }}
+          </span>
+        </div>
+
+        <p class="eyebrow">Cuenta activa</p>
+        <h2>{{ displayName() }}</h2>
+        <p>{{ email() }}</p>
+
+        <div class="account-grid">
+          <article>
+            <span>Rol</span>
+            <strong>{{ isOwner() ? 'Propietario' : 'Usuario' }}</strong>
+          </article>
+          <article>
+            <span>Estado</span>
+            <strong>{{ verifiedLabel() }}</strong>
+          </article>
+        </div>
+      </article>
+
+      <section class="preference-panel">
+        <div class="section-heading">
+          <div>
+            <h2>{{ isOwner() ? 'Herramientas del propietario' : 'Herramientas del usuario' }}</h2>
+            <p>
+              {{
+                isOwner()
+                  ? 'Esta vista prioriza gestion y operacion del restaurante.'
+                  : 'Esta vista prioriza pedidos, historial y experiencia de compra.'
+              }}
+            </p>
+          </div>
+        </div>
+
+        <div class="preference-grid">
+          @for (item of isOwner() ? ownerSettings : userSettings; track item.title) {
+            <article class="preference-card">
+              <span class="preference-icon material-symbols-outlined" aria-hidden="true">
+                {{ item.icon }}
+              </span>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.text }}</p>
+            </article>
+          }
+        </div>
+      </section>
+    </section>
+  </section>
+</main>

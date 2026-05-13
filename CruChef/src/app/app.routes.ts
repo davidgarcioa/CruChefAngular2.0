@@ -9,6 +9,7 @@ import { RoleSelectorComponent } from './auth/role-selector/role-selector.compon
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { UserMenuComponent } from './user-menu/user-menu.component';
 import { PublicRestaurantMenuComponent } from './user-menu/public-restaurant-menu.component';
+import { SettingsComponent } from './settings/settings.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -40,6 +41,12 @@ export const routes: Routes = [
     data: { role: 'user', view: 'history' },
   },
   {
+    path: 'user/settings',
+    component: SettingsComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'user' },
+  },
+  {
     path: 'dashboard',
     component: DashboardComponent,
     canActivate: [authGuard, roleGuard],
@@ -64,10 +71,22 @@ export const routes: Routes = [
     data: { view: 'history', role: 'owner' },
   },
   {
+    path: 'inventory',
+    component: DashboardComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { view: 'inventory', role: 'owner' },
+  },
+  {
     path: 'ai',
     component: DashboardComponent,
     canActivate: [authGuard, roleGuard],
     data: { view: 'ai', role: 'owner' },
+  },
+  {
+    path: 'owner/settings',
+    component: SettingsComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'owner' },
   },
   {
     path: 'public/menu/:ownerUid/:restaurantId',
