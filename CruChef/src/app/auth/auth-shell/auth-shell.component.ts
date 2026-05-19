@@ -13,4 +13,5 @@ export class AuthShellComponent {
   @Input({ required: true }) alternateText = '';
   @Input({ required: true }) alternateLabel = '';
   @Input({ required: true }) alternateRoute = '';
+  @Input() showBrand = true;
 }

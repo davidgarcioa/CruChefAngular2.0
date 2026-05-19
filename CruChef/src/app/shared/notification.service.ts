@@ -89,7 +89,7 @@ export class NotificationService {
       restaurantName: String(document['restaurantName'] ?? ''),
       dishName: String(document['dishName'] ?? ''),
       read: Boolean(document['read']),
-      createdAtMs: this.toMillis(document['createdAt']),
+      createdAtMs: this.toMillis(document['updatedAt'] ?? document['createdAt']),
     };
   }
 

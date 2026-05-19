@@ -628,3 +628,196 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host {
+  background:
+    radial-gradient(circle at 82% 6%, var(--user-glow), transparent 28rem),
+    radial-gradient(circle at 32% 24%, rgba(255, 75, 47, 0.13), transparent 22rem),
+    radial-gradient(circle at 80% 92%, rgba(255, 75, 47, 0.1), transparent 24rem),
+    var(--bg);
+}
+
+.main-layout {
+  grid-template-columns: minmax(0, 224px) minmax(0, 1fr);
+  background: transparent;
+}
+
+.content-shell {
+  padding: 1.35rem 1.6rem 2rem;
+}
+
+.content-header {
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-copy h1 {
+  font-size: clamp(1.7rem, 2.4vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.eyebrow {
+  color: var(--muted-2);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+}
+
+.lead,
+.section-heading p,
+.empty-state p:last-child,
+.order-card p,
+.focus-copy p:last-child {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.section-block {
+  margin-top: 1.25rem;
+}
+
+.focus-panel,
+.catalog-panel,
+.order-panel,
+.empty-state,
+.order-card,
+.restaurant-fact,
+.status-banner,
+.order-dish-preview,
+.checkout-panel,
+.payment-option {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-card), var(--glass-inset);
+}
+
+.focus-panel,
+.catalog-panel,
+.order-panel {
+  padding: 1rem;
+}
+
+.focus-panel {
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.restaurant-switcher {
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.6rem;
+}
+
+.restaurant-card {
+  width: auto;
+  min-width: max-content;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-items: start;
+  gap: 0.55rem;
+  padding: 0.48rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2), var(--glass-inset);
+  text-align: left;
+}
+
+.restaurant-card:hover {
+  transform: translateY(-1px);
+  color: var(--text);
+}
+
+.restaurant-card.is-active {
+  border-color: rgba(255, 75, 47, 0.4);
+  background: var(--accent-soft);
+}
+
+.restaurant-icon {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 1.15rem;
+}
+
+.restaurant-card.is-active .restaurant-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.restaurant-card.is-active {
+  box-shadow: 0 10px 24px rgba(255, 75, 47, 0.14);
+}
+
+.menu-layout,
+.history-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  gap: 1.15rem;
+}
+
+.dish-row {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  padding-top: 0;
+}
+
+.dish-item {
+  min-height: 0;
+  gap: 0.6rem;
+}
+
+.action-button {
+  border-radius: var(--radius-sm);
+  padding: 0.72rem 0.9rem;
+}
+
+.action-button--primary {
+  background: var(--accent);
+}
+
+.field input,
+.field textarea {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(12, 12, 13, 0.58);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-inset);
+}
+
+.checkout-steps button {
+  border-radius: 999px;
+}
+
+.payment-option {
+  min-height: 4.4rem;
+}
+
+.payment-option .material-symbols-outlined {
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+
+.payment-option:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: rgba(255, 75, 47, 0.45);
+}
+
+@media (max-width: 900px) {
+  .main-layout,
+  .focus-panel,
+  .menu-layout,
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-shell {
+    padding: 1rem;
+  }
+}

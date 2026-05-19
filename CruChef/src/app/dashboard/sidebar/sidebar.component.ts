@@ -63,6 +63,10 @@ export class SidebarComponent {
     this.isNotificationsOpen.update((isOpen) => !isOpen);
   }
 
+  closeNotifications(): void {
+    this.isNotificationsOpen.set(false);
+  }
+
   async markNotificationAsRead(notification: AppNotification): Promise<void> {
     if (notification.read) {
       return;

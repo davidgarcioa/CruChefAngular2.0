@@ -15,7 +15,7 @@
       <section class="section-block fade-slide">
         <div class="section-heading">
           <div>
-            <h2>Propietario</h2>
+            <h2>Restaurantes</h2>
             <p><span>{{ restaurants().length }}</span> restaurantes vinculados a tu correo autenticado</p>
           </div>
         </div>
@@ -34,7 +34,7 @@
             <div class="section-heading section-heading--stacked">
               <div>
                 <h2>Tu restaurante</h2>
-                <p><span>Propietario</span> ya no crea restaurantes desde esta ventana.</p>
+                <p><span>Gestiona</span> tus restaurantes vinculados desde esta ventana.</p>
               </div>
             </div>
 
@@ -229,8 +229,8 @@
               </label>
 
               <p class="owner-note">
-                La categoria define automaticamente el icono del plato. La calificacion ya no la
-                define el propietario: los usuarios la dejan cuando el pedido ha sido entregado.
+                La categoria define la imagen del plato. Las calificaciones aparecen cuando los
+                clientes evaluan pedidos entregados.
               </p>
 
               <div class="image-preview">
@@ -260,7 +260,7 @@
             <div class="empty-card">
               <h3>Selecciona un restaurante</h3>
               <p>
-                El CRUD de platos quedara anidado en Firebase bajo el restaurante que tengas activo.
+                Elige un restaurante para crear y ordenar sus platos.
               </p>
             </div>
           }
@@ -332,7 +332,7 @@
             <div class="empty-card">
               <h3>Aun no hay platos en este restaurante</h3>
               <p>
-                Todo plato nuevo se guardara en <strong>users/{{ selectedRestaurant()!.ownerUid }}/restaurants/{{ selectedRestaurant()!.id }}/dishes</strong>.
+                Crea el primer plato y se mostrara aqui junto con sus acciones.
               </p>
             </div>
           } @else {
@@ -387,12 +387,12 @@
         @if (visibleActiveOwnerOrders().length > 0) {
           <div class="orders-grid">
             @for (order of visibleActiveOwnerOrders(); track order.id) {
-              <article class="order-card">
+              <article class="order-card order-card--history">
                 <div class="order-card__top">
                   <div>
                     <p class="eyebrow">{{ order.restaurantName }}</p>
                     <h3>{{ order.dishName }}</h3>
-                    <p>{{ order.customerName }} - {{ order.customerEmail }}</p>
+                    <p class="order-card__customer">Cliente: {{ order.customerName }}</p>
                   </div>
 
                   <span [class]="getOrderStatusClass(order.status)">
@@ -402,24 +402,23 @@
 
                 <div class="order-card__body">
                   <img [src]="order.dishImageUrl" [alt]="order.dishName" />
-                  <div>
-                    <p class="order-card__price">
-                      {{ order.quantity }} x
-                      {{ order.unitPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
-                    </p>
-                    <p>Total: {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
-                    <p>
-                      Pago: {{ getPaymentMethodLabel(order.paymentMethod) }} -
-                      {{ getPaymentStatusLabel(order.paymentStatus) }}
-                    </p>
-                    <p>Creado: {{ order.createdAtMs | date: 'short' }}</p>
+                  <div class="order-card__summary">
+                    <strong class="order-card__total">
+                      {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </strong>
+                    <div class="order-card__meta">
+                      <span>{{ order.quantity }} x {{ order.unitPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+                      <span>{{ getPaymentMethodLabel(order.paymentMethod) }}</span>
+                      <span>{{ getPaymentStatusLabel(order.paymentStatus) }}</span>
+                      <span>{{ order.createdAtMs | date: 'short' }}</span>
+                    </div>
                     @if (order.notes) {
-                      <p>Indicaciones: {{ order.notes }}</p>
+                      <p class="order-note">{{ order.notes }}</p>
                     }
                   </div>
                 </div>
 
-                <div class="dish-actions">
+                <div class="order-actions">
                   @for (status of getNextStatuses(order); track status) {
                     <button
                       type="button"
@@ -483,7 +482,7 @@
                   <div>
                     <p class="eyebrow">{{ order.restaurantName }}</p>
                     <h3>{{ order.dishName }}</h3>
-                    <p>{{ order.customerName }} - {{ order.customerEmail }}</p>
+                    <p class="order-card__customer">Cliente: {{ order.customerName }}</p>
                   </div>
 
                   <span [class]="getOrderStatusClass(order.status)">
@@ -493,23 +492,23 @@
 
                 <div class="order-card__body">
                   <img [src]="order.dishImageUrl" [alt]="order.dishName" />
-                  <div>
-                    <p class="order-card__price">
-                      Total: {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
-                    </p>
-                    <p>Pedido: {{ order.createdAtMs | date: 'short' }}</p>
-                    <p>
-                      Pago: {{ getPaymentMethodLabel(order.paymentMethod) }} -
-                      {{ getPaymentStatusLabel(order.paymentStatus) }}
-                    </p>
+                  <div class="order-card__summary">
+                    <strong class="order-card__total">
+                      {{ order.totalPrice | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
+                    </strong>
+                    <div class="order-card__meta">
+                      <span>{{ order.createdAtMs | date: 'short' }}</span>
+                      <span>{{ getPaymentMethodLabel(order.paymentMethod) }}</span>
+                      <span>{{ getPaymentStatusLabel(order.paymentStatus) }}</span>
+                    </div>
                     @if (order.deliveredAtMs) {
-                      <p>Entregado: {{ order.deliveredAtMs | date: 'short' }}</p>
+                      <p class="order-note">Entregado: {{ order.deliveredAtMs | date: 'short' }}</p>
                     }
                     @if (order.rating != null) {
-                      <p>Calificacion del usuario: {{ order.rating }}/5</p>
+                      <p class="order-note">Calificacion: {{ order.rating }}/5</p>
                     }
                     @if (order.reviewText) {
-                      <p>Comentario: {{ order.reviewText }}</p>
+                      <p class="order-note">{{ order.reviewText }}</p>
                     }
                   </div>
                 </div>

@@ -67,6 +67,18 @@ export const categories: Category[] = [
   { id: 'drinks', name: 'Bebidas', icon: '\uD83E\uDD64', imageKey: 'drink' },
   { id: 'breakfast', name: 'Desayunos', icon: '\uD83E\uDD5E', imageKey: 'breakfast' },
   { id: 'salads', name: 'Ensaladas', icon: '\uD83E\uDD57', imageKey: 'salad' },
+  { id: 'grill', name: 'Parrilla', icon: '\uD83E\uDD69', imageKey: 'grill' },
+  { id: 'seafood', name: 'Mariscos', icon: '\uD83E\uDD90', imageKey: 'seafood' },
+  { id: 'fish', name: 'Pescados', icon: '\uD83D\uDC1F', imageKey: 'fish' },
+  { id: 'soups', name: 'Sopas', icon: '\uD83C\uDF72', imageKey: 'soup' },
+  { id: 'rice', name: 'Arroces', icon: '\uD83C\uDF5A', imageKey: 'rice' },
+  { id: 'vegan', name: 'Vegano', icon: '\uD83E\uDD66', imageKey: 'vegan' },
+  { id: 'coffee', name: 'Cafe', icon: '\u2615', imageKey: 'coffee' },
+  { id: 'icecream', name: 'Helados', icon: '\uD83C\uDF66', imageKey: 'icecream' },
+  { id: 'bakery', name: 'Panaderia', icon: '\uD83E\uDD50', imageKey: 'bakery' },
+  { id: 'hotdogs', name: 'Perros', icon: '\uD83C\uDF2D', imageKey: 'hotdog' },
+  { id: 'arepas', name: 'Arepas', icon: '\uD83E\uDED3', imageKey: 'arepa' },
+  { id: 'healthy', name: 'Saludable', icon: '\uD83E\uDD51', imageKey: 'healthy' },
 ];
 
 export const dishImageOptions: DishImageOption[] = [
@@ -141,6 +153,78 @@ export const dishImageOptions: DishImageOption[] = [
     label: 'Ensalada',
     emoji: '\uD83E\uDD57',
     imageUrl: dishIllustration('\uD83E\uDD57', '#9fe0a2', '#43764d'),
+  },
+  {
+    key: 'grill',
+    label: 'Parrilla',
+    emoji: '\uD83E\uDD69',
+    imageUrl: dishIllustration('\uD83E\uDD69', '#ff9f6e', '#7c332a'),
+  },
+  {
+    key: 'seafood',
+    label: 'Mariscos',
+    emoji: '\uD83E\uDD90',
+    imageUrl: dishIllustration('\uD83E\uDD90', '#7ed5ff', '#235b78'),
+  },
+  {
+    key: 'fish',
+    label: 'Pescado',
+    emoji: '\uD83D\uDC1F',
+    imageUrl: dishIllustration('\uD83D\uDC1F', '#83cdf6', '#2f6c88'),
+  },
+  {
+    key: 'soup',
+    label: 'Sopa',
+    emoji: '\uD83C\uDF72',
+    imageUrl: dishIllustration('\uD83C\uDF72', '#f5b86b', '#8d4b2f'),
+  },
+  {
+    key: 'rice',
+    label: 'Arroz',
+    emoji: '\uD83C\uDF5A',
+    imageUrl: dishIllustration('\uD83C\uDF5A', '#f3dfaa', '#9c7a3c'),
+  },
+  {
+    key: 'vegan',
+    label: 'Vegano',
+    emoji: '\uD83E\uDD66',
+    imageUrl: dishIllustration('\uD83E\uDD66', '#89dc8d', '#2f7b45'),
+  },
+  {
+    key: 'coffee',
+    label: 'Cafe',
+    emoji: '\u2615',
+    imageUrl: dishIllustration('\u2615', '#c68d5d', '#5f3a28'),
+  },
+  {
+    key: 'icecream',
+    label: 'Helado',
+    emoji: '\uD83C\uDF66',
+    imageUrl: dishIllustration('\uD83C\uDF66', '#ffb2d6', '#8b4571'),
+  },
+  {
+    key: 'bakery',
+    label: 'Panaderia',
+    emoji: '\uD83E\uDD50',
+    imageUrl: dishIllustration('\uD83E\uDD50', '#f0c378', '#9d6131'),
+  },
+  {
+    key: 'hotdog',
+    label: 'Perro caliente',
+    emoji: '\uD83C\uDF2D',
+    imageUrl: dishIllustration('\uD83C\uDF2D', '#f1b35f', '#b4492e'),
+  },
+  {
+    key: 'arepa',
+    label: 'Arepa',
+    emoji: '\uD83E\uDED3',
+    imageUrl: dishIllustration('\uD83E\uDED3', '#f3ca65', '#a96527'),
+  },
+  {
+    key: 'healthy',
+    label: 'Saludable',
+    emoji: '\uD83E\uDD51',
+    imageUrl: dishIllustration('\uD83E\uDD51', '#8ee0a2', '#357344'),
   },
 ];
 

@@ -41,6 +41,14 @@ async function createNotificationSafely(payload) {
   }
 }
 
+async function upsertOrderNotificationSafely(payload) {
+  try {
+    await notificationService.upsertOrderNotification(payload);
+  } catch (error) {
+    console.error('No se pudo actualizar la notificacion del pedido.', error);
+  }
+}
+
 async function listOrders(filters = {}) {
   let query = db.collection('orders');
 
@@ -121,7 +129,7 @@ async function updateOrderStatus(id, body) {
 
   const notification = statusNotificationMap[status];
   if (notification) {
-    await createNotificationSafely({
+    await upsertOrderNotificationSafely({
       recipientUid: order.customerUid,
       audience: 'user',
       type: `order-${status}`,

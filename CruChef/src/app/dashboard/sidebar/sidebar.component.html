@@ -1,11 +1,6 @@
 <aside class="sidebar" [class.sidebar--owner]="role === 'owner'">
   <div class="brand">
-    <div class="brand-mark" aria-hidden="true">
-      <span class="material-symbols-outlined">restaurant</span>
-    </div>
-    <div>
-      <p class="brand-name">Cruchef</p>
-    </div>
+    <img class="brand-logo" src="/LogoCruChef.png" alt="CruChef" />
   </div>
 
   <nav class="sidebar-nav" aria-label="Principal">
@@ -35,6 +30,7 @@
     <button
       type="button"
       class="footer-action footer-action--notification"
+      [class.is-active]="isNotificationsOpen()"
       aria-label="Notificaciones"
       (click)="toggleNotifications()"
     >
@@ -52,21 +48,28 @@
       <span class="material-symbols-outlined">logout</span>
     </button>
   </div>
+</aside>
 
-  @if (isNotificationsOpen()) {
-    <section class="notifications-panel">
+@if (isNotificationsOpen()) {
+  <div class="notifications-backdrop" role="presentation" (click)="closeNotifications()">
+    <section class="notifications-panel" role="dialog" aria-modal="true" aria-labelledby="notifications-title" (click)="$event.stopPropagation()">
       <div class="notifications-panel__header">
         <div>
-          <p class="panel-eyebrow">Notificaciones</p>
-          <h2>{{ unreadCount() }} sin leer</h2>
+          <p class="panel-eyebrow">Centro de actividad</p>
+          <h2 id="notifications-title">Notificaciones</h2>
+          <p>{{ unreadCount() }} sin leer</p>
         </div>
 
-        @if (unreadCount() > 0) {
-          <button type="button" class="panel-action" (click)="markAllNotificationsAsRead()">
-            Leer todo
-          </button>
-        }
+        <button type="button" class="panel-action panel-action--icon" aria-label="Cerrar notificaciones" (click)="closeNotifications()">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
       </div>
+
+      @if (unreadCount() > 0) {
+        <button type="button" class="panel-action panel-action--wide" (click)="markAllNotificationsAsRead()">
+          Marcar todo como leido
+        </button>
+      }
 
       @if (notificationsError()) {
         <p class="notification-empty">{{ notificationsError() }}</p>
@@ -92,5 +95,5 @@
         <p class="notification-empty">Aun no tienes notificaciones.</p>
       }
     </section>
-  }
-</aside>
+  </div>
+}

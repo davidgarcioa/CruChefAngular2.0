@@ -231,3 +231,134 @@
     flex-direction: column;
   }
 }
+
+:host {
+  background:
+    radial-gradient(circle at 82% 6%, var(--user-glow), transparent 28rem),
+    radial-gradient(circle at 32% 24%, rgba(255, 75, 47, 0.13), transparent 22rem),
+    var(--bg);
+}
+
+.main-layout {
+  grid-template-columns: minmax(0, 224px) minmax(0, 1fr);
+  background: transparent;
+}
+
+.main-layout--owner {
+  background:
+    radial-gradient(circle at 82% 6%, var(--owner-glow), transparent 28rem),
+    radial-gradient(circle at 32% 24%, rgba(245, 185, 66, 0.14), transparent 22rem),
+    radial-gradient(circle at 80% 92%, rgba(245, 185, 66, 0.1), transparent 24rem);
+}
+
+.content-shell {
+  padding: 1.35rem 1.6rem 2rem;
+}
+
+.settings-hero,
+.account-panel,
+.preference-panel,
+.preference-card,
+.account-grid article {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-card), var(--glass-inset);
+}
+
+.settings-hero {
+  padding: 1rem;
+}
+
+.settings-hero h1 {
+  font-size: clamp(1.7rem, 2.4vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.settings-hero p,
+.account-panel p,
+.section-heading p,
+.preference-card p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.hero-action {
+  min-height: 2.6rem;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.main-layout--owner .hero-action {
+  background: var(--gold);
+}
+
+.settings-layout {
+  grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+  gap: 1.15rem;
+  margin-top: 1rem;
+}
+
+.account-panel,
+.preference-panel {
+  padding: 1rem;
+}
+
+.profile-mark,
+.preference-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 1.35rem;
+  box-shadow: none;
+}
+
+.profile-mark {
+  margin-bottom: 0.85rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.main-layout--owner .profile-mark,
+.main-layout--owner .preference-card:hover .preference-icon {
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.account-grid article {
+  padding: 0.75rem;
+}
+
+.preference-grid {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+
+.preference-card {
+  min-height: 10rem;
+  padding: 1rem;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.preference-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-soft), var(--glass-inset);
+}
+
+.preference-card h3 {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .main-layout,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-shell {
+    padding: 1rem;
+  }
+}

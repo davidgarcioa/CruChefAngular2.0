@@ -34,19 +34,90 @@ function normalizeNotificationPayload(body) {
   };
 }
 
+function mapNotificationSnapshot(snapshot) {
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  };
+}
+
+function getNotificationTime(notification) {
+  const updatedMs = notification.updatedAt?.toMillis ? notification.updatedAt.toMillis() : 0;
+  const createdMs = notification.createdAt?.toMillis ? notification.createdAt.toMillis() : 0;
+  return updatedMs || createdMs;
+}
+
+function collapseRepeatedOrderNotifications(notifications, audience) {
+  if (audience !== 'user') {
+    return notifications;
+  }
+
+  const seenOrderIds = new Set();
+  return notifications.filter((notification) => {
+    const isOrderNotification =
+      typeof notification.orderId === 'string' &&
+      notification.orderId.length > 0 &&
+      typeof notification.type === 'string' &&
+      notification.type.startsWith('order-');
+
+    if (!isOrderNotification) {
+      return true;
+    }
+
+    if (seenOrderIds.has(notification.orderId)) {
+      return false;
+    }
+
+    seenOrderIds.add(notification.orderId);
+    return true;
+  });
+}
+
 async function createNotification(body) {
   const payload = normalizeNotificationPayload(body);
   const document = await db.collection('notifications').add({
     ...payload,
     read: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
   const snapshot = await document.get();
-  return {
-    id: document.id,
-    ...snapshot.data(),
-  };
+  return mapNotificationSnapshot(snapshot);
+}
+
+async function upsertOrderNotification(body) {
+  const payload = normalizeNotificationPayload(body);
+
+  if (!payload.orderId) {
+    throw new Error('La notificacion del pedido requiere una orden valida.');
+  }
+
+  const snapshot = await db
+    .collection('notifications')
+    .where('recipientUid', '==', payload.recipientUid)
+    .where('audience', '==', payload.audience)
+    .where('orderId', '==', payload.orderId)
+    .get();
+
+  if (snapshot.empty) {
+    return createNotification(payload);
+  }
+
+  const existingDocument = snapshot.docs
+    .map((document) => ({ document, notification: document.data() }))
+    .sort((left, right) => getNotificationTime(right.notification) - getNotificationTime(left.notification))[0]
+    .document;
+
+  await existingDocument.ref.update({
+    ...payload,
+    read: false,
+    readAt: null,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const updatedSnapshot = await existingDocument.ref.get();
+  return mapNotificationSnapshot(updatedSnapshot);
 }
 
 async function listNotifications(filters = {}) {
@@ -60,14 +131,14 @@ async function listNotifications(filters = {}) {
   const query = db.collection('notifications').where('recipientUid', '==', recipientUid);
 
   const snapshot = await query.get();
-  return snapshot.docs
-    .map((document) => ({ id: document.id, ...document.data() }))
+  const notifications = snapshot.docs
+    .map(mapNotificationSnapshot)
     .filter((notification) => (VALID_AUDIENCES.has(audience) ? notification.audience === audience : true))
     .sort((left, right) => {
-      const leftMs = left.createdAt?.toMillis ? left.createdAt.toMillis() : 0;
-      const rightMs = right.createdAt?.toMillis ? right.createdAt.toMillis() : 0;
-      return rightMs - leftMs;
+      return getNotificationTime(right) - getNotificationTime(left);
     });
+
+  return collapseRepeatedOrderNotifications(notifications, audience);
 }
 
 async function markNotificationRead(id) {
@@ -84,10 +155,7 @@ async function markNotificationRead(id) {
   });
 
   const updatedSnapshot = await documentRef.get();
-  return {
-    id: updatedSnapshot.id,
-    ...updatedSnapshot.data(),
-  };
+  return mapNotificationSnapshot(updatedSnapshot);
 }
 
 async function markAllRead(filters = {}) {
@@ -112,6 +180,7 @@ async function markAllRead(filters = {}) {
 
 module.exports = {
   createNotification,
+  upsertOrderNotification,
   listNotifications,
   markNotificationRead,
   markAllRead,
