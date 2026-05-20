@@ -84,6 +84,25 @@
   color: #ff9c9c;
 }
 
+.forgot-button {
+  justify-self: end;
+  border: 0;
+  padding: 0.15rem 0;
+  background: transparent;
+  color: #ffb8ad;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.forgot-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.forgot-button:hover:not(:disabled) {
+  color: #ffffff;
+}
+
 .submit-button {
   margin-top: 0.35rem;
   border: 0;

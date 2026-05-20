@@ -41,6 +41,7 @@ export const ownerNavigationItems: NavigationItem[] = [
   { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
   { label: 'Ordenes', route: '/orders', icon: 'receipt_long' },
   { label: 'Restaurantes', route: '/restaurants', icon: 'storefront' },
+  { label: 'Platos', route: '/dishes', icon: 'restaurant_menu' },
   { label: 'Inventario', route: '/inventory', icon: 'inventory_2' },
   { label: 'IA Voz', route: '/ai', icon: 'smart_toy' },
   { label: 'Historial', route: '/history', icon: 'history' },

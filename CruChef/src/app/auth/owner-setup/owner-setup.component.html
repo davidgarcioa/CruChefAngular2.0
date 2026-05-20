@@ -77,37 +77,58 @@
         </label>
       </div>
 
-      <div class="field-grid">
-        <label class="field">
+      <section class="schedule-card">
+        <div>
           <span>Horarios</span>
-          <input type="text" formControlName="schedule" placeholder="Lun-Dom 8:00 AM - 10:00 PM" />
-          @if (restaurantForm.controls.schedule.touched && restaurantForm.controls.schedule.invalid) {
-            @if (restaurantForm.controls.schedule.hasError('required') || restaurantForm.controls.schedule.hasError('trimmedRequired')) {
-              <small>El horario es obligatorio.</small>
-            } @else if (restaurantForm.controls.schedule.hasError('minlength')) {
-              <small>El horario debe tener al menos 3 caracteres.</small>
-            } @else if (restaurantForm.controls.schedule.hasError('maxlength')) {
-              <small>El horario no puede superar 80 caracteres.</small>
-            }
-          }
-        </label>
+          <p>Selecciona los dias y la franja de atencion del restaurante.</p>
+        </div>
 
-        <label class="field">
-          <span>RUT</span>
-          <input type="text" formControlName="rut" placeholder="Numero de RUT" />
-          @if (restaurantForm.controls.rut.touched && restaurantForm.controls.rut.invalid) {
-            @if (restaurantForm.controls.rut.hasError('required') || restaurantForm.controls.rut.hasError('trimmedRequired')) {
-              <small>El RUT es obligatorio.</small>
-            } @else if (restaurantForm.controls.rut.hasError('minlength')) {
-              <small>El RUT debe tener al menos 6 caracteres.</small>
-            } @else if (restaurantForm.controls.rut.hasError('maxlength')) {
-              <small>El RUT no puede superar 20 caracteres.</small>
-            } @else if (restaurantForm.controls.rut.hasError('pattern')) {
-              <small>El RUT solo puede contener letras, n&uacute;meros, puntos o guiones.</small>
-            }
+        <div class="day-picker">
+          @for (day of scheduleDays(); track day.id) {
+            <button
+              type="button"
+              class="day-chip"
+              [class.is-active]="day.selected"
+              (click)="toggleScheduleDay(day.id)"
+            >
+              {{ day.label }}
+            </button>
           }
-        </label>
-      </div>
+        </div>
+
+        <div class="time-grid">
+          <label class="field">
+            <span>Abre</span>
+            <input type="time" formControlName="openTime" />
+          </label>
+
+          <label class="field">
+            <span>Cierra</span>
+            <input type="time" formControlName="closeTime" />
+          </label>
+        </div>
+
+        @if (scheduleError()) {
+          <small>{{ scheduleError() }}</small>
+        }
+      </section>
+
+      <label class="file-field rut-file-field">
+        <span>Archivo del RUT</span>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          (change)="handleRutFileChange($event)"
+        />
+        <strong>
+          <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+          {{ rutFileName() || 'Cargar PDF o imagen' }}
+        </strong>
+        <small>Maximo 1.5 MB. Se guarda como soporte legal del registro.</small>
+        @if (restaurantForm.controls.rutFileData.touched && restaurantForm.controls.rutFileData.invalid) {
+          <small>El archivo del RUT es obligatorio.</small>
+        }
+      </label>
 
       <button type="submit" class="primary-button" [disabled]="isSubmitting()">
         {{ isSubmitting() ? 'Creando...' : 'Crear mi primer restaurante' }}

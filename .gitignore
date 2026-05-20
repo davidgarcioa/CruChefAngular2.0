@@ -1,14 +1,18 @@
-﻿.env
-node_modules/
-dist/
-venv/
-firebase-key.json
-node_modules
+# Secrets and local environment files
+.env
 **/.env
-**/node_modules/
-**/dist/
-**/venv/
+firebase-key.json
 **/firebase-key.json
+
+# Generated dependencies and build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+venv/
+**/venv/
+
+# Runtime/cache files
 **/__pycache__/
 **/*.pyc
 **/*.log

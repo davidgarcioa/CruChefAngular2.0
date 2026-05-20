@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-search-bar',
@@ -8,4 +8,10 @@ import { Component, Input } from '@angular/core';
 })
 export class SearchBarComponent {
   @Input() placeholder = 'Busca tu plato favorito';
+  @Input() value = '';
+  @Output() valueChange = new EventEmitter<string>();
+
+  updateValue(event: Event): void {
+    this.valueChange.emit((event.target as HTMLInputElement).value);
+  }
 }

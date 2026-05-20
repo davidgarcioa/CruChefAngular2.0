@@ -53,6 +53,15 @@
         }
       </label>
 
+      <button
+        type="button"
+        class="forgot-button"
+        [disabled]="isSendingReset()"
+        (click)="sendPasswordReset()"
+      >
+        {{ isSendingReset() ? 'Enviando enlace...' : 'Olvide mi contrasena' }}
+      </button>
+
       <button type="submit" class="submit-button" [disabled]="isSubmitting()">
         {{ isSubmitting() ? 'Validando...' : 'Entrar' }}
       </button>

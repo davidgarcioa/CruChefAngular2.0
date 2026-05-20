@@ -26,7 +26,11 @@ export interface RestaurantFormValue {
   city: string;
   phone: string;
   schedule: string;
-  rut: string;
+  rut?: string;
+  rutFileName: string;
+  rutFileType: string;
+  rutFileSize: number;
+  rutFileData: string;
 }
 
 export interface DishFormValue {
@@ -237,12 +241,20 @@ export class OwnerService {
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       const message = typeof error.error?.message === 'string' ? error.error.message : '';
+      const isFirebaseAdminCredentialError =
+        message.includes('UNAUTHENTICATED') ||
+        message.includes('invalid_grant') ||
+        message.includes('Invalid JWT Signature');
 
       if (error.status === 0) {
         return 'No se pudo conectar con el backend. Verifica que Backend este corriendo en http://localhost:3000.';
       }
 
       if (error.status === 400) {
+        if (message.includes('El RUT del restaurante debe tener al menos 6 caracteres')) {
+          return 'Carga el archivo del RUT del restaurante.';
+        }
+
         return message || 'Los datos enviados no son validos.';
       }
 
@@ -255,6 +267,10 @@ export class OwnerService {
       }
 
       if (error.status >= 500) {
+        if (isFirebaseAdminCredentialError) {
+          return 'Firebase Admin no pudo autenticar el servidor. Genera una nueva llave firebase-key.json y reinicia el backend.';
+        }
+
         return message || 'El backend no pudo procesar la solicitud.';
       }
 
@@ -301,6 +317,9 @@ export class OwnerService {
       phone: String(document['phone'] ?? ''),
       schedule: String(document['schedule'] ?? ''),
       rut: String(document['rut'] ?? ''),
+      rutFileName: String(document['rutFileName'] ?? ''),
+      rutFileType: String(document['rutFileType'] ?? ''),
+      rutFileSize: Number(document['rutFileSize'] ?? 0),
       verificationStatus:
         document['verificationStatus'] === 'verified' ? 'verified' : 'pending',
     };

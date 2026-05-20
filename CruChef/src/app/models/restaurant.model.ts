@@ -7,6 +7,9 @@ export interface Restaurant {
   city: string;
   phone: string;
   schedule: string;
-  rut: string;
+  rut?: string;
+  rutFileName?: string;
+  rutFileType?: string;
+  rutFileSize?: number;
   verificationStatus: 'pending' | 'verified';
 }

@@ -2,7 +2,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal, PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 import { toDataURL } from 'qrcode';
 
@@ -18,7 +18,6 @@ import { Dish } from '../models/dish.model';
 import { InventoryItem } from '../models/inventory-item.model';
 import { Restaurant } from '../models/restaurant.model';
 import { AiVoiceAssistantComponent } from './ai-voice-assistant/ai-voice-assistant.component';
-import { CategorySliderComponent } from './category-slider/category-slider.component';
 import { categories, getCategoryImageUrl, ownerNavigationItems } from './dashboard.data';
 import { DishCardComponent } from './dish-card/dish-card.component';
 import { DishFormValue, InventoryFormValue, OwnerService } from './owner.service';
@@ -36,9 +35,9 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     SidebarComponent,
     SearchBarComponent,
-    CategorySliderComponent,
     DishCardComponent,
     AiVoiceAssistantComponent,
   ],
@@ -63,6 +62,8 @@ export class DashboardComponent {
   readonly ownerOrders = signal<Order[]>([]);
   readonly selectedRestaurantId = signal<string | null>(null);
   readonly selectedOrderRestaurantId = signal<'all' | string>('all');
+  readonly dishPreviewCategoryId = signal('burgers');
+  readonly searchQuery = signal('');
   readonly editingDishId = signal<string | null>(null);
   readonly editingInventoryItemId = signal<string | null>(null);
   readonly viewedDish = signal<Dish | null>(null);
@@ -113,17 +114,30 @@ export class DashboardComponent {
 
   readonly filteredDishes = computed(() => {
     const categoryId = this.selectedCategoryId();
+    const query = this.normalizeSearchQuery(this.searchQuery());
     const dishes = this.dishes();
 
-    if (categoryId === 'all') {
-      return dishes;
+    const categoryFilteredDishes =
+      categoryId === 'all'
+        ? dishes
+        : dishes.filter((dish) => dish.categoryId === categoryId);
+
+    if (!query) {
+      return categoryFilteredDishes;
     }
 
-    return dishes.filter((dish) => dish.categoryId === categoryId);
+    return categoryFilteredDishes.filter((dish) =>
+      this.matchesSearch(
+        query,
+        dish.name,
+        dish.restaurantName,
+        this.categories.find((category) => category.id === dish.categoryId)?.name ?? '',
+      ),
+    );
   });
 
   readonly previewImageUrl = computed(() => {
-    return getCategoryImageUrl(this.dishForm.controls.categoryId.value);
+    return getCategoryImageUrl(this.dishPreviewCategoryId());
   });
 
   readonly viewedDishCategoryName = computed(() => {
@@ -147,9 +161,44 @@ export class DashboardComponent {
     this.filterOrdersByRestaurant(this.activeOwnerOrders()),
   );
 
-  readonly visibleHistoricalOwnerOrders = computed(() =>
-    this.filterOrdersByRestaurant(this.historicalOwnerOrders()),
-  );
+  readonly visibleHistoricalOwnerOrders = computed(() => {
+    const query = this.normalizeSearchQuery(this.searchQuery());
+    const orders = this.filterOrdersByRestaurant(this.historicalOwnerOrders());
+
+    if (!query) {
+      return orders;
+    }
+
+    return orders.filter((order) =>
+      this.matchesSearch(
+        query,
+        order.dishName,
+        order.customerName,
+        order.restaurantName,
+        order.paymentMethod,
+        order.paymentStatus,
+        this.getOrderStatusLabel(order.status),
+      ),
+    );
+  });
+
+  readonly visibleInventoryItems = computed(() => {
+    const query = this.normalizeSearchQuery(this.searchQuery());
+    const items = this.inventoryItems();
+
+    if (!query) {
+      return items;
+    }
+
+    return items.filter((item) =>
+      this.matchesSearch(
+        query,
+        item.name,
+        item.unit,
+        this.getInventoryStatus(item),
+      ),
+    );
+  });
 
   readonly dashboardOrders = computed(() => {
     const restaurant = this.selectedRestaurant();
@@ -243,6 +292,8 @@ export class DashboardComponent {
       ? 'Propietario'
       : currentView === 'dashboard'
         ? 'Dashboard'
+        : currentView === 'dishes'
+          ? 'Platos'
           : currentView === 'orders'
             ? 'Ordenes'
             : currentView === 'inventory'
@@ -252,10 +303,32 @@ export class DashboardComponent {
                 : 'Historial';
   });
 
+  readonly showOwnerSearch = computed(() =>
+    ['dishes', 'inventory', 'history'].includes(this.currentView()),
+  );
+
+  readonly ownerSearchPlaceholder = computed(() => {
+    const currentView = this.currentView();
+
+    return currentView === 'inventory'
+      ? 'Busca un insumo del inventario'
+      : currentView === 'history'
+        ? 'Busca por pedido, cliente o estado'
+        : 'Busca un plato del catalogo';
+  });
+
   constructor() {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
-      this.currentView.set((data['view'] as string | undefined) ?? 'restaurants');
+      const nextView = (data['view'] as string | undefined) ?? 'restaurants';
+      this.currentView.set(nextView);
+      this.searchQuery.set('');
     });
+
+    this.dishForm.controls.categoryId.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((categoryId) => {
+        this.dishPreviewCategoryId.set(categoryId);
+      });
 
     this.ownerService
       .getRestaurants()
@@ -333,6 +406,11 @@ export class DashboardComponent {
 
   selectOrderRestaurant(restaurantId: 'all' | string): void {
     this.selectedOrderRestaurantId.set(restaurantId);
+  }
+
+  selectDishCategory(categoryId: string): void {
+    this.dishForm.controls.categoryId.setValue(categoryId);
+    this.dishForm.controls.categoryId.markAsTouched();
   }
 
   async submitDish(): Promise<void> {
@@ -624,6 +702,14 @@ export class DashboardComponent {
     }
 
     return orders.filter((order) => order.restaurantId === restaurantId);
+  }
+
+  private normalizeSearchQuery(value: string): string {
+    return value.trim().toLowerCase();
+  }
+
+  private matchesSearch(query: string, ...values: Array<string | number | null | undefined>): boolean {
+    return values.some((value) => String(value ?? '').toLowerCase().includes(query));
   }
 
   async generateRestaurantQr(restaurant: Restaurant): Promise<void> {

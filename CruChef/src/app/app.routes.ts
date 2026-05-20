@@ -65,6 +65,12 @@ export const routes: Routes = [
     data: { view: 'restaurants', role: 'owner' },
   },
   {
+    path: 'dishes',
+    component: DashboardComponent,
+    canActivate: [authGuard, roleGuard],
+    data: { view: 'dishes', role: 'owner' },
+  },
+  {
     path: 'history',
     component: DashboardComponent,
     canActivate: [authGuard, roleGuard],

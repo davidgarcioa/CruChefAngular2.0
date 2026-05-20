@@ -31,6 +31,17 @@ export class OwnerSetupComponent {
 
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal('');
+  readonly rutFileName = signal('');
+  readonly scheduleError = signal('');
+  readonly scheduleDays = signal([
+    { id: 'mon', label: 'Lun', selected: true },
+    { id: 'tue', label: 'Mar', selected: true },
+    { id: 'wed', label: 'Mie', selected: true },
+    { id: 'thu', label: 'Jue', selected: true },
+    { id: 'fri', label: 'Vie', selected: true },
+    { id: 'sat', label: 'Sab', selected: true },
+    { id: 'sun', label: 'Dom', selected: true },
+  ]);
 
   readonly restaurantForm = this.fb.nonNullable.group({
     name: [
@@ -74,22 +85,15 @@ export class OwnerSetupComponent {
     schedule: [
       '',
       [
-        Validators.required,
-        trimmedRequired,
-        Validators.minLength(3),
         Validators.maxLength(formMaxLengths.schedule),
       ],
     ],
-    rut: [
-      '',
-      [
-        Validators.required,
-        trimmedRequired,
-        Validators.minLength(6),
-        Validators.maxLength(formMaxLengths.rut),
-        Validators.pattern(formPatterns.rut),
-      ],
-    ],
+    openTime: ['08:00', Validators.required],
+    closeTime: ['22:00', Validators.required],
+    rutFileName: ['', Validators.required],
+    rutFileType: ['', Validators.required],
+    rutFileSize: [0, [Validators.required, Validators.min(1)]],
+    rutFileData: ['', Validators.required],
   });
 
   constructor() {
@@ -104,6 +108,14 @@ export class OwnerSetupComponent {
   }
 
   async submit(): Promise<void> {
+    const schedule = this.buildSchedule();
+    if (!schedule) {
+      this.scheduleError.set('Selecciona al menos un dia y define hora de apertura y cierre.');
+      return;
+    }
+
+    this.restaurantForm.controls.schedule.setValue(schedule);
+
     if (this.restaurantForm.invalid) {
       this.restaurantForm.markAllAsTouched();
       return;
@@ -113,7 +125,16 @@ export class OwnerSetupComponent {
     this.errorMessage.set('');
 
     try {
-      const { name, address, city, phone, schedule, rut } =
+      const {
+        name,
+        address,
+        city,
+        phone,
+        rutFileName,
+        rutFileType,
+        rutFileSize,
+        rutFileData,
+      } =
         this.restaurantForm.getRawValue();
       await this.ownerService.createRestaurant(
         {
@@ -121,8 +142,12 @@ export class OwnerSetupComponent {
           address: normalizeTextInput(address),
           city: normalizeTextInput(city),
           phone: phone.trim(),
-          schedule: normalizeTextInput(schedule),
-          rut: rut.trim(),
+          schedule,
+          rut: rutFileName,
+          rutFileName,
+          rutFileType,
+          rutFileSize,
+          rutFileData,
         } as RestaurantFormValue,
       );
       await this.router.navigateByUrl('/restaurants');
@@ -131,5 +156,66 @@ export class OwnerSetupComponent {
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  toggleScheduleDay(dayId: string): void {
+    this.scheduleDays.update((days) =>
+      days.map((day) =>
+        day.id === dayId ? { ...day, selected: !day.selected } : day,
+      ),
+    );
+    this.scheduleError.set('');
+  }
+
+  async handleRutFileChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > 1_500_000) {
+      this.errorMessage.set('El archivo del RUT no puede superar 1.5 MB.');
+      input.value = '';
+      return;
+    }
+
+    const dataUrl = await this.readFileAsDataUrl(file);
+    this.rutFileName.set(file.name);
+    this.restaurantForm.patchValue({
+      rutFileName: file.name,
+      rutFileType: file.type || 'application/octet-stream',
+      rutFileSize: file.size,
+      rutFileData: dataUrl,
+    });
+    this.restaurantForm.controls.rutFileData.markAsTouched();
+    this.errorMessage.set('');
+  }
+
+  private buildSchedule(): string {
+    const selectedDays = this.scheduleDays().filter((day) => day.selected);
+    const openTime = this.restaurantForm.controls.openTime.value;
+    const closeTime = this.restaurantForm.controls.closeTime.value;
+
+    if (selectedDays.length === 0 || !openTime || !closeTime) {
+      return '';
+    }
+
+    const days =
+      selectedDays.length === this.scheduleDays().length
+        ? 'Lun-Dom'
+        : selectedDays.map((day) => day.label).join(', ');
+
+    return `${days} ${openTime} - ${closeTime}`;
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ''));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
   }
 }

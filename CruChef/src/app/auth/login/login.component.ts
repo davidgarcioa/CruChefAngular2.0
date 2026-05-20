@@ -23,6 +23,7 @@ export class LoginComponent {
   private readonly roleService = inject(RoleService);
 
   readonly isSubmitting = signal(false);
+  readonly isSendingReset = signal(false);
   readonly errorMessage = signal('');
   readonly noticeMessage = signal(
     this.route.snapshot.queryParamMap.get('notice') === 'verify-email'
@@ -80,6 +81,34 @@ export class LoginComponent {
       this.errorMessage.set(this.authService.getErrorMessage(error));
     } finally {
       this.isSubmitting.set(false);
+    }
+  }
+
+  async sendPasswordReset(): Promise<void> {
+    const emailControl = this.form.controls.email;
+
+    if (emailControl.invalid) {
+      emailControl.markAsTouched();
+      this.errorMessage.set('Escribe un correo valido para enviarte el enlace.');
+      this.noticeMessage.set('');
+      this.warningMessage.set('');
+      return;
+    }
+
+    this.errorMessage.set('');
+    this.noticeMessage.set('');
+    this.warningMessage.set('');
+    this.isSendingReset.set(true);
+
+    try {
+      await this.authService.sendPasswordReset(normalizeEmailInput(emailControl.value));
+      this.noticeMessage.set(
+        'Te enviamos un enlace para restablecer tu contrasena. Revisa tu correo.',
+      );
+    } catch (error) {
+      this.errorMessage.set(this.authService.getErrorMessage(error));
+    } finally {
+      this.isSendingReset.set(false);
     }
   }
 }

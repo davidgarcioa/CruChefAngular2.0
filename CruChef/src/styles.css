@@ -368,3 +368,185 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.dishes-layout .crud-panel,
+.dishes-layout .catalog-panel {
+  background: rgba(22, 22, 24, 0.96);
+  backdrop-filter: none;
+}
+
+.dishes-layout .owner-note,
+.dishes-layout .image-preview,
+.dishes-layout .dish-category-grid {
+  background: rgba(31, 31, 33, 0.92);
+}
+
+.owner-layout .restaurants-panel,
+.owner-layout .qr-panel {
+  position: relative;
+  isolation: isolate;
+  contain: paint;
+  overflow: hidden;
+  background: rgba(22, 22, 24, 0.96);
+  backdrop-filter: none;
+}
+
+.owner-layout .restaurants-panel {
+  z-index: 2;
+}
+
+.owner-layout .qr-panel {
+  z-index: 1;
+}
+
+.owner-layout .restaurant-card {
+  position: relative;
+  z-index: 1;
+  contain: paint;
+  background: #242426;
+  backdrop-filter: none;
+}
+
+.owner-layout .restaurant-card.is-selected {
+  background: linear-gradient(135deg, #4d3b1b, #493719);
+  box-shadow: inset 0 0 0 1px rgba(245, 185, 66, 0.18);
+}
+
+.restaurant-create-actions {
+  margin-top: 1rem;
+  padding-top: 0.35rem;
+}
+
+.add-restaurant-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 14rem;
+  min-height: 3rem;
+  overflow: hidden;
+}
+
+.add-restaurant-button .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.owner-layout .primary-button.primary-button,
+.owner-layout .secondary-button.secondary-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  color: rgba(255, 244, 207, 0.92);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.36);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
+}
+
+.owner-layout .secondary-button.secondary-button {
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.owner-layout .primary-button.primary-button::before,
+.owner-layout .primary-button.primary-button::after,
+.owner-layout .secondary-button.secondary-button::before,
+.owner-layout .secondary-button.secondary-button::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.owner-layout .primary-button.primary-button::before,
+.owner-layout .secondary-button.secondary-button::before {
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 38%),
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.55), transparent 18%),
+    radial-gradient(circle at 80% 95%, rgba(245, 185, 66, 0.36), transparent 34%);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.owner-layout .secondary-button.secondary-button::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), transparent 40%),
+    radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.42), transparent 20%);
+  opacity: 0;
+}
+
+.owner-layout .primary-button.primary-button::after,
+.owner-layout .secondary-button.secondary-button::after {
+  width: 7rem;
+  height: 7rem;
+  top: -4.2rem;
+  left: -1.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  filter: blur(18px);
+  opacity: 0;
+  transform: rotate(-22deg);
+  transition: opacity 180ms ease;
+}
+
+.owner-layout .primary-button.primary-button:hover,
+.owner-layout .secondary-button.secondary-button:hover {
+  transform: translateY(-2px) scale(1.015);
+  border-color: rgba(255, 238, 184, 0.72);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12) 40%, rgba(245, 185, 66, 0.32)),
+    rgba(245, 185, 66, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 22px rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.owner-layout .primary-button.primary-button:hover::before,
+.owner-layout .secondary-button.secondary-button:hover::before {
+  opacity: 0.62;
+}
+
+.owner-layout .primary-button.primary-button:hover::after,
+.owner-layout .secondary-button.secondary-button:hover::after {
+  opacity: 0.32;
+}
+
+.owner-layout .secondary-button.secondary-button:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1) 44%, rgba(245, 185, 66, 0.18)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.owner-layout .primary-button.primary-button:active,
+.owner-layout .secondary-button.secondary-button:active {
+  transform: translateY(0) scale(0.985);
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.owner-layout .primary-button.primary-button:disabled,
+.owner-layout .secondary-button.secondary-button:disabled {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.14);
+  opacity: 0.58;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}

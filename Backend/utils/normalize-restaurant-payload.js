@@ -8,7 +8,10 @@ function normalizeRestaurantPayload(body = {}) {
   const city = normalizeTextField(body.city);
   const phone = normalizeTextField(body.phone);
   const schedule = normalizeTextField(body.schedule);
-  const rut = normalizeTextField(body.rut);
+  const rutFileName = normalizeTextField(body.rutFileName);
+  const rutFileType = normalizeTextField(body.rutFileType);
+  const rutFileData = normalizeTextField(body.rutFileData);
+  const rutFileSize = Number(body.rutFileSize || 0);
 
   if (name.length < 2) {
     throw new Error('El nombre del restaurante debe tener al menos 2 caracteres.');
@@ -30,8 +33,12 @@ function normalizeRestaurantPayload(body = {}) {
     throw new Error('El horario del restaurante debe tener al menos 3 caracteres.');
   }
 
-  if (rut.length < 6) {
-    throw new Error('El RUT del restaurante debe tener al menos 6 caracteres.');
+  if (rutFileName.length < 3 || rutFileData.length < 20) {
+    throw new Error('Carga el archivo del RUT del restaurante.');
+  }
+
+  if (!Number.isFinite(rutFileSize) || rutFileSize <= 0) {
+    throw new Error('El archivo del RUT no es valido.');
   }
 
   return {
@@ -40,7 +47,10 @@ function normalizeRestaurantPayload(body = {}) {
     city,
     phone,
     schedule,
-    rut,
+    rutFileName,
+    rutFileType,
+    rutFileSize,
+    rutFileData,
   };
 }
 

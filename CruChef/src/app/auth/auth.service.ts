@@ -9,6 +9,7 @@ import {
   getAuth,
   onAuthStateChanged,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -117,6 +118,10 @@ export class AuthService {
     await signOut(this.auth);
   }
 
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(this.auth, email);
+  }
+
   async requireVerifiedUser(): Promise<User> {
     const user = await this.getVerifiedUser();
 
@@ -183,6 +188,10 @@ export class AuthService {
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       const message = typeof error.error?.message === 'string' ? error.error.message : '';
+      const isFirebaseAdminCredentialError =
+        message.includes('UNAUTHENTICATED') ||
+        message.includes('invalid_grant') ||
+        message.includes('Invalid JWT Signature');
 
       if (error.status === 0) {
         return 'No se pudo conectar con el backend. Verifica que Backend este corriendo en http://localhost:3000.';
@@ -201,6 +210,10 @@ export class AuthService {
       }
 
       if (error.status >= 500) {
+        if (isFirebaseAdminCredentialError) {
+          return 'Firebase Admin no pudo autenticar el servidor. Genera una nueva llave firebase-key.json y reinicia el backend.';
+        }
+
         return message || 'El backend no pudo procesar la solicitud.';
       }
 
@@ -230,6 +243,8 @@ export class AuthService {
         return 'Demasiados intentos. Intenta de nuevo mas tarde.';
       case 'auth/network-request-failed':
         return 'No se pudo conectar con Firebase.';
+      case 'auth/missing-email':
+        return 'Escribe tu correo para enviarte el enlace.';
       case 'auth/email-not-verified':
         return 'Tu correo no esta verificado. Te enviamos un nuevo enlace.';
       default:

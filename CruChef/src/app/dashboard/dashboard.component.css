@@ -125,6 +125,13 @@
   align-items: start;
 }
 
+.dishes-layout {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.34fr) minmax(0, 0.66fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
 .owner-side,
 .dashboard-layout,
 .restaurant-list,
@@ -263,7 +270,7 @@
 }
 
 .restaurant-filter-pill.is-active {
-  background: var(--gold-soft);
+  background: #5c4316;
   border-color: rgba(245, 185, 66, 0.38);
   color: var(--text);
   font-weight: 700;
@@ -361,6 +368,53 @@
 .field select optgroup {
   background: #232323;
   color: var(--text);
+}
+
+.dish-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.8rem, 1fr));
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(12, 12, 13, 0.52);
+  box-shadow: var(--glass-inset);
+}
+
+.dish-category-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 2.85rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.48rem 0.55rem;
+  background: rgba(44, 44, 46, 0.6);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dish-category-option__icon {
+  width: 1.85rem;
+  height: 1.85rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dish-category-option.is-active {
+  border-color: rgba(245, 185, 66, 0.48);
+  background: var(--gold-soft);
+  color: var(--text);
+}
+
+.dish-category-option.is-active .dish-category-option__icon {
+  background: rgba(245, 185, 66, 0.18);
 }
 
 .field-grid {
@@ -481,8 +535,14 @@
 }
 
 .mini-button {
-  padding: 0.52rem 0.65rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.52rem 0.45rem;
   font-size: 0.84rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mini-button--danger,
@@ -523,7 +583,7 @@
 
 .dish-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   grid-auto-rows: 1fr;
   gap: 1rem;
   align-items: stretch;
@@ -540,6 +600,8 @@
 .dish-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  min-width: 0;
 }
 
 .dish-viewer {
@@ -671,6 +733,7 @@
 
 @media (max-width: 1100px) {
   .owner-layout,
+  .dishes-layout,
   .dashboard-details,
   .stats-grid {
     grid-template-columns: 1fr;

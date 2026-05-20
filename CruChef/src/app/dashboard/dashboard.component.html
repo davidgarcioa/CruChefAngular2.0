@@ -8,7 +8,13 @@
         <h1>{{ viewTitle() }}</h1>
       </div>
 
-      <app-search-bar />
+      @if (showOwnerSearch()) {
+        <app-search-bar
+          [placeholder]="ownerSearchPlaceholder()"
+          [value]="searchQuery()"
+          (valueChange)="searchQuery.set($event)"
+        />
+      }
     </header>
 
     @if (currentView() === 'restaurants') {
@@ -20,12 +26,6 @@
           </div>
         </div>
 
-        <app-category-slider
-          [categories]="categories"
-          [selectedCategoryId]="selectedCategoryId()"
-          theme="gold"
-          (categoryChange)="selectedCategoryId.set($event)"
-        />
       </section>
 
       <section class="owner-layout section-block fade-slide delay-1">
@@ -62,10 +62,17 @@
 
                     <p>{{ restaurant.address }}</p>
                     <p>{{ restaurant.schedule }}</p>
-                    <p>RUT: {{ restaurant.rut }}</p>
+                    <p>RUT: {{ restaurant.rutFileName || 'Archivo cargado' }}</p>
                     <p>Correo vinculado: {{ restaurant.ownerEmail }}</p>
                   </article>
                 }
+              </div>
+
+              <div class="form-actions restaurant-create-actions">
+                <a routerLink="/owner/setup" class="primary-button add-restaurant-button">
+                  <span class="material-symbols-outlined" aria-hidden="true">add_business</span>
+                  Agregar restaurante
+                </a>
               </div>
             } @else {
               <div class="empty-card">
@@ -74,95 +81,122 @@
                   Primero completa el flujo de propietario para crear tu restaurante.
                 </p>
               </div>
-            }
-          </section>
 
-          <section class="qr-panel">
-            <div class="section-heading section-heading--stacked">
-              <div>
-                <h2>QR del Restaurante</h2>
-                <p>
-                  @if (selectedRestaurant()) {
-                    <span>Menu publico de {{ selectedRestaurant()!.name }}</span>
-                  } @else {
-                    <span>Selecciona un restaurante</span> para generar su codigo QR.
-                  }
-                </p>
-              </div>
-            </div>
-
-            @if (selectedRestaurant()) {
-              <div class="qr-container">
-                @if (qrError()) {
-                  <p class="status-message status-message--error">{{ qrError() }}</p>
-                }
-
-                @if (qrDataUrl()) {
-                  <div class="qr-content">
-                    <div class="qr-image-wrapper">
-                      <img class="qr-image" [src]="qrDataUrl()" [alt]="'QR de ' + selectedRestaurant()!.name" />
-                    </div>
-
-                    <div class="qr-details">
-                      <p class="eyebrow">Listo para compartir</p>
-                      <h3>{{ selectedRestaurant()!.name }}</h3>
-                      <p>
-                        Tus clientes escanean este codigo para abrir el menu publico y hacer su
-                        pedido. Cuando despliegues CruChef, el QR usara el dominio final.
-                      </p>
-
-                      <div class="qr-actions">
-                        <a class="secondary-button" [href]="qrPublicUrl()" target="_blank" rel="noopener">
-                          Abrir menu
-                        </a>
-
-                        <button
-                          type="button"
-                          class="primary-button"
-                          (click)="generateRestaurantQr(selectedRestaurant()!)"
-                          [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
-                        >
-                          {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Regenerar QR' }}
-                        </button>
-
-                        <a
-                          class="secondary-button"
-                          [download]="'qr-' + selectedRestaurant()!.name + '.png'"
-                          [href]="qrDataUrl()"
-                          role="button"
-                        >
-                          Descargar PNG
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="qr-empty">
-                    <span class="material-symbols-outlined" aria-hidden="true">qr_code_2</span>
-                    <h3>QR listo para generar</h3>
-                    <p>
-                      Crea un QR conectado al menu publico del restaurante. Al desplegar, funcionara
-                      con el dominio final de la pagina.
-                    </p>
-                    <button
-                      type="button"
-                      class="primary-button"
-                      (click)="generateRestaurantQr(selectedRestaurant()!)"
-                      [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
-                    >
-                      {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Generar QR' }}
-                    </button>
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="empty-card">
-                <h3>Sin restaurante activo</h3>
-                <p>Selecciona un restaurante para generar su codigo QR.</p>
+              <div class="form-actions restaurant-create-actions">
+                <a routerLink="/owner/setup" class="primary-button add-restaurant-button">
+                  <span class="material-symbols-outlined" aria-hidden="true">add_business</span>
+                  Agregar restaurante
+                </a>
               </div>
             }
           </section>
         </div>
+
+        <section class="qr-panel">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>QR del Restaurante</h2>
+              <p>
+                @if (selectedRestaurant()) {
+                  <span>Menu publico de {{ selectedRestaurant()!.name }}</span>
+                } @else {
+                  <span>Selecciona un restaurante</span> para generar su codigo QR.
+                }
+              </p>
+            </div>
+          </div>
+
+          @if (selectedRestaurant()) {
+            <div class="qr-container">
+              @if (qrError()) {
+                <p class="status-message status-message--error">{{ qrError() }}</p>
+              }
+
+              @if (qrDataUrl()) {
+                <div class="qr-content">
+                  <div class="qr-image-wrapper">
+                    <img class="qr-image" [src]="qrDataUrl()" [alt]="'QR de ' + selectedRestaurant()!.name" />
+                  </div>
+
+                  <div class="qr-details">
+                    <p class="eyebrow">Listo para compartir</p>
+                    <h3>{{ selectedRestaurant()!.name }}</h3>
+                    <p>
+                      Tus clientes escanean este codigo para abrir el menu publico y hacer su
+                      pedido. Cuando despliegues CruChef, el QR usara el dominio final.
+                    </p>
+
+                    <div class="qr-actions">
+                      <a class="secondary-button" [href]="qrPublicUrl()" target="_blank" rel="noopener">
+                        Abrir menu
+                      </a>
+
+                      <button
+                        type="button"
+                        class="primary-button"
+                        (click)="generateRestaurantQr(selectedRestaurant()!)"
+                        [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
+                      >
+                        {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Regenerar QR' }}
+                      </button>
+
+                      <a
+                        class="secondary-button"
+                        [download]="'qr-' + selectedRestaurant()!.name + '.png'"
+                        [href]="qrDataUrl()"
+                        role="button"
+                      >
+                        Descargar PNG
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="qr-empty">
+                  <span class="material-symbols-outlined" aria-hidden="true">qr_code_2</span>
+                  <h3>QR listo para generar</h3>
+                  <p>
+                    Crea un QR conectado al menu publico del restaurante. Al desplegar, funcionara
+                    con el dominio final de la pagina.
+                  </p>
+                  <button
+                    type="button"
+                    class="primary-button"
+                    (click)="generateRestaurantQr(selectedRestaurant()!)"
+                    [disabled]="generatingQrRestaurantId() === selectedRestaurant()!.id"
+                  >
+                    {{ generatingQrRestaurantId() === selectedRestaurant()!.id ? 'Generando...' : 'Generar QR' }}
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-card">
+              <h3>Sin restaurante activo</h3>
+              <p>Selecciona un restaurante para generar su codigo QR.</p>
+            </div>
+            }
+        </section>
+      </section>
+    } @else if (currentView() === 'dishes') {
+      <section class="section-block fade-slide">
+        @if (restaurants().length > 0) {
+          <div class="order-filter">
+            @for (restaurant of restaurants(); track restaurant.id) {
+              <button
+                type="button"
+                class="restaurant-filter-pill"
+                [class.is-active]="selectedRestaurantId() === restaurant.id"
+                (click)="selectRestaurant(restaurant.id)"
+              >
+                {{ restaurant.name }}
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="dishes-layout section-block fade-slide delay-1">
 
         <section class="crud-panel">
           <div class="section-heading section-heading--stacked">
@@ -216,26 +250,29 @@
                 }
               </label>
 
-              <label class="field">
+              <div class="field">
                 <span>Categoria del plato</span>
-                <select formControlName="categoryId">
+                <div class="dish-category-grid" role="listbox" aria-label="Categoria del plato">
                   @for (category of categoryOptions; track category.id) {
-                    <option [value]="category.id">{{ category.name }}</option>
+                    <button
+                      type="button"
+                      class="dish-category-option"
+                      [class.is-active]="dishForm.controls.categoryId.value === category.id"
+                      (click)="selectDishCategory(category.id)"
+                    >
+                      <span class="dish-category-option__icon" aria-hidden="true">{{ category.icon }}</span>
+                      <span>{{ category.name }}</span>
+                    </button>
                   }
-                </select>
+                </div>
                 @if (dishForm.controls.categoryId.touched && dishForm.controls.categoryId.hasError('required')) {
                   <small>Selecciona una categoria para el plato.</small>
                 }
-              </label>
-
-              <p class="owner-note">
-                La categoria define la imagen del plato. Las calificaciones aparecen cuando los
-                clientes evaluan pedidos entregados.
-              </p>
+              </div>
 
               <div class="image-preview">
                 <img [src]="previewImageUrl()" [alt]="dishForm.controls.name.value || 'Preview'" />
-                <p>La imagen cambia en tiempo real segun la categoria que selecciones.</p>
+                <p>Vista previa de la imagen del plato.</p>
               </div>
 
               <div class="form-actions">
@@ -651,9 +688,9 @@
                 </div>
               </div>
 
-              @if (inventoryItems().length > 0) {
+              @if (visibleInventoryItems().length > 0) {
                 <div class="inventory-items">
-                  @for (item of inventoryItems(); track item.id) {
+                  @for (item of visibleInventoryItems(); track item.id) {
                     <article class="inventory-item-card">
                       <div class="inventory-item-card__top">
                         <div>
@@ -689,8 +726,14 @@
                 </div>
               } @else {
                 <div class="empty-card">
-                  <h3>Inventario vacio</h3>
-                  <p>Registra tus primeros insumos para recibir alertas cuando bajen del minimo.</p>
+                  <h3>{{ searchQuery() ? 'Sin resultados' : 'Inventario vacio' }}</h3>
+                  <p>
+                    {{
+                      searchQuery()
+                        ? 'No encontramos insumos que coincidan con tu busqueda.'
+                        : 'Registra tus primeros insumos para recibir alertas cuando bajen del minimo.'
+                    }}
+                  </p>
                 </div>
               }
             </section>

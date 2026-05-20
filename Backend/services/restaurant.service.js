@@ -47,6 +47,9 @@ function mapRestaurant(document, ownerUid, ownerEmailFallback = '') {
     phone: typeof data.phone === 'string' ? data.phone : '',
     schedule: typeof data.schedule === 'string' ? data.schedule : '',
     rut: typeof data.rut === 'string' ? data.rut : '',
+    rutFileName: typeof data.rutFileName === 'string' ? data.rutFileName : '',
+    rutFileType: typeof data.rutFileType === 'string' ? data.rutFileType : '',
+    rutFileSize: Number(data.rutFileSize || 0),
     verificationStatus:
       data.verificationStatus === 'verified' ? 'verified' : 'pending',
   };
