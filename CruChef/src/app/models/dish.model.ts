@@ -1,3 +1,10 @@
+export interface DishStockRequirement {
+  itemId: string;
+  name: string;
+  unit: string;
+  quantity: number;
+}
+
 export interface Dish {
   id: string;
   name: string;
@@ -11,4 +18,5 @@ export interface Dish {
   imageUrl: string;
   imageKey: string;
   categoryId: string;
+  stockRequirements: DishStockRequirement[];
 }

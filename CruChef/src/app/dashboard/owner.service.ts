@@ -14,7 +14,7 @@ import {
 } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
-import { Dish } from '../models/dish.model';
+import { Dish, DishStockRequirement } from '../models/dish.model';
 import { InventoryItem } from '../models/inventory-item.model';
 import { Restaurant } from '../models/restaurant.model';
 import { environment } from '../environment';
@@ -37,6 +37,7 @@ export interface DishFormValue {
   name: string;
   price: number;
   categoryId: string;
+  stockRequirements: DishStockRequirement[];
 }
 
 export interface InventoryFormValue {
@@ -356,7 +357,30 @@ export class OwnerService {
         typeof document['imageUrl'] === 'string'
           ? String(document['imageUrl'])
           : getDishImageUrl(imageKey),
+      stockRequirements: this.mapStockRequirements(document['stockRequirements']),
     };
+  }
+
+  private mapStockRequirements(value: unknown): DishStockRequirement[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((requirement) => {
+        const document =
+          typeof requirement === 'object' && requirement !== null
+            ? (requirement as Record<string, unknown>)
+            : {};
+
+        return {
+          itemId: String(document['itemId'] ?? ''),
+          name: String(document['name'] ?? ''),
+          unit: String(document['unit'] ?? ''),
+          quantity: Number(document['quantity'] ?? 0),
+        };
+      })
+      .filter((requirement) => requirement.itemId && requirement.quantity > 0);
   }
 
   private mapInventoryItem(document: Record<string, unknown>): InventoryItem {

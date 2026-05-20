@@ -14,7 +14,7 @@ import {
   historicalOrderStatuses,
   orderStatusLabelMap,
 } from '../models/order.model';
-import { Dish } from '../models/dish.model';
+import { Dish, DishStockRequirement } from '../models/dish.model';
 import { InventoryItem } from '../models/inventory-item.model';
 import { Restaurant } from '../models/restaurant.model';
 import { AiVoiceAssistantComponent } from './ai-voice-assistant/ai-voice-assistant.component';
@@ -67,6 +67,7 @@ export class DashboardComponent {
   readonly editingDishId = signal<string | null>(null);
   readonly editingInventoryItemId = signal<string | null>(null);
   readonly viewedDish = signal<Dish | null>(null);
+  readonly dishStockRequirements = signal<DishStockRequirement[]>([]);
   readonly isSavingDish = signal(false);
   readonly updatingOrderId = signal<string | null>(null);
   readonly pendingOrderCancellation = signal<Order | null>(null);
@@ -99,6 +100,11 @@ export class DashboardComponent {
     ],
     price: [24000, [Validators.required, Validators.min(1000), Validators.max(1000000)]],
     categoryId: ['burgers', Validators.required],
+  });
+
+  readonly recipeForm = this.fb.nonNullable.group({
+    itemId: [''],
+    quantity: [1, [Validators.min(0.001)]],
   });
 
   readonly inventoryForm = this.fb.nonNullable.group({
@@ -147,6 +153,13 @@ export class DashboardComponent {
     }
 
     return this.categories.find((category) => category.id === dish.categoryId)?.name ?? 'Categoria';
+  });
+
+  readonly dishRecipePreview = computed(() => {
+    const requirements = this.dishStockRequirements();
+    return requirements.length > 0
+      ? requirements.map((requirement) => `${requirement.quantity} ${requirement.unit} de ${requirement.name}`)
+      : [];
   });
 
   readonly activeOwnerOrders = computed(() =>
@@ -404,6 +417,46 @@ export class DashboardComponent {
     this.resetInventoryForm();
   }
 
+  addDishStockRequirement(): void {
+    const itemId = this.recipeForm.controls.itemId.value;
+    const quantity = Number(this.recipeForm.controls.quantity.value);
+    const item = this.inventoryItems().find((inventoryItem) => inventoryItem.id === itemId);
+
+    if (!item || !Number.isFinite(quantity) || quantity <= 0) {
+      this.recipeForm.markAllAsTouched();
+      this.dishError.set('Selecciona un insumo y una cantidad valida para la receta.');
+      return;
+    }
+
+    this.dishError.set('');
+    this.dishStockRequirements.update((requirements) => {
+      const existingRequirement = requirements.find((requirement) => requirement.itemId === item.id);
+      const nextRequirement = {
+        itemId: item.id,
+        name: item.name,
+        unit: item.unit,
+        quantity,
+      };
+
+      return existingRequirement
+        ? requirements.map((requirement) =>
+            requirement.itemId === item.id ? nextRequirement : requirement,
+          )
+        : [...requirements, nextRequirement];
+    });
+
+    this.recipeForm.reset({
+      itemId: '',
+      quantity: 1,
+    });
+  }
+
+  removeDishStockRequirement(itemId: string): void {
+    this.dishStockRequirements.update((requirements) =>
+      requirements.filter((requirement) => requirement.itemId !== itemId),
+    );
+  }
+
   selectOrderRestaurant(restaurantId: 'all' | string): void {
     this.selectedOrderRestaurantId.set(restaurantId);
   }
@@ -425,6 +478,11 @@ export class DashboardComponent {
       return;
     }
 
+    if (this.dishStockRequirements().length === 0) {
+      this.dishError.set('Agrega al menos un insumo requerido para descontar inventario.');
+      return;
+    }
+
     this.isSavingDish.set(true);
     this.dishError.set('');
     this.dishSuccess.set('');
@@ -432,6 +490,7 @@ export class DashboardComponent {
     const payload = {
       ...this.dishForm.getRawValue(),
       name: normalizeTextInput(this.dishForm.controls.name.value),
+      stockRequirements: this.dishStockRequirements(),
     } as DishFormValue;
 
     try {
@@ -461,6 +520,7 @@ export class DashboardComponent {
       price: dish.price,
       categoryId: dish.categoryId,
     });
+    this.dishStockRequirements.set(dish.stockRequirements);
   }
 
   async deleteDish(dishId: string): Promise<void> {
@@ -521,6 +581,11 @@ export class DashboardComponent {
       name: '',
       price: 24000,
       categoryId: 'burgers',
+    });
+    this.dishStockRequirements.set([]);
+    this.recipeForm.reset({
+      itemId: '',
+      quantity: 1,
     });
   }
 

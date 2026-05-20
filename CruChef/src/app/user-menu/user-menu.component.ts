@@ -22,6 +22,11 @@ import { categories, userNavigationItems } from '../dashboard/dashboard.data';
 import { PublicMenuService } from './public-menu.service';
 import { formMaxLengths } from '../shared/form-validators';
 
+interface CartItem {
+  dish: Dish;
+  quantity: number;
+}
+
 @Component({
   selector: 'app-user-menu',
   standalone: true,
@@ -50,6 +55,7 @@ export class UserMenuComponent {
   readonly selectedCategoryId = signal('all');
   readonly selectedRestaurantId = signal('');
   readonly selectedDish = signal<Dish | null>(null);
+  readonly cartItems = signal<CartItem[]>([]);
   readonly checkoutStep = signal<'details' | 'payment' | 'review'>('details');
   readonly orderQuantity = signal(1);
   readonly selectedPaymentMethod = signal('cash');
@@ -90,7 +96,7 @@ export class UserMenuComponent {
   );
 
   readonly currentRestaurantLabel = computed(
-    () => this.currentRestaurant()?.name || 'elige un restaurante',
+    () => this.currentRestaurant()?.name || 'Elige un restaurante',
   );
 
   readonly filteredDishes = computed(() => {
@@ -128,11 +134,16 @@ export class UserMenuComponent {
   });
 
   readonly checkoutSubtotal = computed(() => {
-    const dish = this.selectedDish();
-    return dish ? dish.price * this.orderQuantity() : 0;
+    return this.cartItems().reduce(
+      (total, item) => total + item.dish.price * item.quantity,
+      0,
+    );
   });
 
   readonly checkoutTotal = computed(() => this.checkoutSubtotal());
+  readonly cartItemsCount = computed(() =>
+    this.cartItems().reduce((total, item) => total + item.quantity, 0),
+  );
 
   readonly paymentMethodLabel = computed(() => {
     switch (this.selectedPaymentMethod()) {
@@ -298,28 +309,64 @@ export class UserMenuComponent {
     this.selectedRestaurantId.set(restaurantId);
     this.selectedCategoryId.set('all');
     this.selectedDish.set(null);
+    this.cartItems.set([]);
     this.orderSuccess.set('');
     this.orderActionError.set('');
   }
 
   openOrderComposer(dish: Dish): void {
     this.selectedDish.set(dish);
+    this.addCartItem(dish);
     this.orderActionError.set('');
     this.orderSuccess.set('');
-    this.orderForm.reset({
-      quantity: 1,
-      notes: '',
-      paymentMethod: 'cash',
-    });
-    this.orderQuantity.set(1);
-    this.selectedPaymentMethod.set('cash');
     this.checkoutStep.set('details');
   }
 
-  goToPaymentStep(): void {
-    this.orderForm.controls.quantity.markAsTouched();
+  addCartItem(dish: Dish): void {
+    this.cartItems.update((items) => {
+      const currentItem = items.find((item) => item.dish.id === dish.id);
 
-    if (this.orderForm.controls.quantity.invalid) {
+      if (currentItem) {
+        return items.map((item) =>
+          item.dish.id === dish.id
+            ? { ...item, quantity: Math.min(item.quantity + 1, 10) }
+            : item,
+        );
+      }
+
+      return [...items, { dish, quantity: 1 }];
+    });
+  }
+
+  increaseCartItem(dishId: string): void {
+    this.cartItems.update((items) =>
+      items.map((item) =>
+        item.dish.id === dishId
+          ? { ...item, quantity: Math.min(item.quantity + 1, 10) }
+          : item,
+      ),
+    );
+  }
+
+  decreaseCartItem(dishId: string): void {
+    this.cartItems.update((items) =>
+      items
+        .map((item) =>
+          item.dish.id === dishId
+            ? { ...item, quantity: item.quantity - 1 }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
+    );
+  }
+
+  removeCartItem(dishId: string): void {
+    this.cartItems.update((items) => items.filter((item) => item.dish.id !== dishId));
+  }
+
+  goToPaymentStep(): void {
+    if (this.cartItems().length === 0) {
+      this.orderActionError.set('Agrega al menos un plato al pedido.');
       return;
     }
 
@@ -347,10 +394,10 @@ export class UserMenuComponent {
     }
 
     const restaurant = this.currentRestaurant();
-    const dish = this.selectedDish();
+    const items = this.cartItems();
 
-    if (!restaurant || !dish) {
-      this.orderActionError.set('Selecciona un plato del catalogo antes de enviar el pedido.');
+    if (!restaurant || items.length === 0) {
+      this.orderActionError.set('Agrega al menos un plato al pedido.');
       return;
     }
 
@@ -359,9 +406,22 @@ export class UserMenuComponent {
     this.orderSuccess.set('');
 
     try {
-      await this.orderService.createOrder(restaurant, dish, this.orderForm.getRawValue());
-      this.orderSuccess.set('Pedido enviado al propietario correctamente.');
+      const formValue = this.orderForm.getRawValue();
+      await Promise.all(
+        items.map((item) =>
+          this.orderService.createOrder(restaurant, item.dish, {
+            ...formValue,
+            quantity: item.quantity,
+          }),
+        ),
+      );
+      this.orderSuccess.set(
+        items.length > 1
+          ? 'Pedido enviado con varios platos al propietario.'
+          : 'Pedido enviado al propietario correctamente.',
+      );
       this.selectedDish.set(null);
+      this.cartItems.set([]);
       this.orderForm.reset({
         quantity: 1,
         notes: '',

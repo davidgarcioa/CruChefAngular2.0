@@ -260,6 +260,7 @@ export const defaultDishes: Dish[] = [
     categoryId: 'burgers',
     imageKey: getCategoryImageKey('burgers'),
     imageUrl: getCategoryImageUrl('burgers'),
+    stockRequirements: [],
   },
   {
     id: 'dish-2',
@@ -274,6 +275,7 @@ export const defaultDishes: Dish[] = [
     categoryId: 'pizza',
     imageKey: getCategoryImageKey('pizza'),
     imageUrl: getCategoryImageUrl('pizza'),
+    stockRequirements: [],
   },
   {
     id: 'dish-3',
@@ -288,6 +290,7 @@ export const defaultDishes: Dish[] = [
     categoryId: 'sushi',
     imageKey: getCategoryImageKey('sushi'),
     imageUrl: getCategoryImageUrl('sushi'),
+    stockRequirements: [],
   },
   {
     id: 'dish-4',
@@ -302,6 +305,7 @@ export const defaultDishes: Dish[] = [
     categoryId: 'desserts',
     imageKey: getCategoryImageKey('desserts'),
     imageUrl: getCategoryImageUrl('desserts'),
+    stockRequirements: [],
   },
   {
     id: 'dish-5',
@@ -316,6 +320,7 @@ export const defaultDishes: Dish[] = [
     categoryId: 'tacos',
     imageKey: getCategoryImageKey('tacos'),
     imageUrl: getCategoryImageUrl('tacos'),
+    stockRequirements: [],
   },
 ];
 

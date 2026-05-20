@@ -195,6 +195,7 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
         name: normalizeTextInput(formValue.name),
         price: formValue.price,
         categoryId: formValue.categoryId,
+        stockRequirements: [],
       });
 
       this.dishSuccess.set(`OK Plato "${formValue.name}" creado exitosamente.`);

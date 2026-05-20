@@ -46,11 +46,11 @@
   color: #ffffff;
   text-align: left;
   cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  transition: border-color 180ms ease, background 180ms ease;
 }
 
 .role-option:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: none;
   border-color: rgba(255, 75, 47, 0.45);
   background: var(--accent-soft);
 }

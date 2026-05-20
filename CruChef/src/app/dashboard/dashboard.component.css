@@ -219,18 +219,19 @@
 .top-dish-item,
 .recent-order-item {
   background: rgba(36, 36, 38, 0.58);
-  backdrop-filter: var(--glass-blur);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2), var(--glass-inset);
 }
 
 .restaurant-card {
   padding: 0.85rem;
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, background-color 160ms ease;
+  transition: border-color 160ms ease, background-color 160ms ease;
 }
 
 .restaurant-card:hover {
-  transform: translateY(-1px);
+  transform: none;
   border-color: var(--border-strong);
 }
 
@@ -517,7 +518,7 @@
   font-weight: 700;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .primary-button {
@@ -529,7 +530,8 @@
 .mini-button {
   border: 1px solid var(--border);
   background: rgba(44, 44, 46, 0.64);
-  backdrop-filter: var(--glass-blur);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: var(--glass-inset);
   color: var(--text);
 }
@@ -561,7 +563,7 @@
 .secondary-button:hover,
 .mini-button:hover,
 .danger-button:hover {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .status-message {

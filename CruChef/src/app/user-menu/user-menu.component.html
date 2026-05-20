@@ -44,7 +44,7 @@
                 [class.is-active]="selectedRestaurantId() === getRestaurantKey(restaurant)"
                 (click)="selectRestaurant(getRestaurantKey(restaurant))"
               >
-                <span class="restaurant-icon material-symbols-outlined" aria-hidden="true">restaurant</span>
+                <span class="restaurant-icon" aria-hidden="true">🍔</span>
                 <span class="restaurant-card__body">
                   <span class="restaurant-card__name">{{ restaurant.name }}</span>
                   <span class="restaurant-card__meta">{{ restaurant.city }}</span>
@@ -117,7 +117,7 @@
                 <div class="dish-item">
                   <app-dish-card [dish]="dish" [animationDelay]="index" />
                   <button type="button" class="action-button" (click)="openOrderComposer(dish)">
-                    Pedir ahora
+                    Agregar
                   </button>
                 </div>
               }
@@ -151,139 +151,86 @@
             <p class="status-banner status-banner--error">{{ orderActionError() }}</p>
           }
 
-          @if (selectedDish()) {
-            <div class="order-dish-preview">
-              <img [src]="selectedDish()!.imageUrl" [alt]="selectedDish()!.name" />
-              <div>
-                <p class="eyebrow">Plato seleccionado</p>
-                <h3>{{ selectedDish()!.name }}</h3>
-                <p>{{ selectedDishCategoryName() }}</p>
-                <p class="order-dish-price">
-                  {{ selectedDish()!.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}
-                </p>
-              </div>
-            </div>
-
+          @if (cartItems().length > 0) {
             <form class="order-form" [formGroup]="orderForm" (ngSubmit)="submitOrder()">
-              <div class="checkout-steps" aria-label="Proceso de compra">
-                <button type="button" [class.is-active]="checkoutStep() === 'details'" (click)="goToCheckoutStep('details')">
-                  1
-                </button>
-                <button type="button" [class.is-active]="checkoutStep() === 'payment'" (click)="goToPaymentStep()">
-                  2
-                </button>
-                <button type="button" [class.is-active]="checkoutStep() === 'review'" (click)="goToReviewStep()">
-                  3
-                </button>
+              <div class="cart-list">
+                @for (item of cartItems(); track item.dish.id) {
+                  <article class="cart-item">
+                    <img [src]="item.dish.imageUrl" [alt]="item.dish.name" />
+                    <div class="cart-item__copy">
+                      <strong>{{ item.dish.name }}</strong>
+                      <span>{{ item.dish.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+                    </div>
+                    <div class="cart-quantity" aria-label="Cantidad del plato">
+                      <button type="button" (click)="decreaseCartItem(item.dish.id)">-</button>
+                      <span>{{ item.quantity }}</span>
+                      <button type="button" (click)="increaseCartItem(item.dish.id)">+</button>
+                    </div>
+                    <button type="button" class="cart-remove" (click)="removeCartItem(item.dish.id)">
+                      Quitar
+                    </button>
+                  </article>
+                }
               </div>
 
-              @if (checkoutStep() === 'details') {
-                <section class="checkout-panel">
-                  <p class="eyebrow">Datos del pedido</p>
-                  <label class="field">
-                    <span>Cantidad</span>
-                    <input type="number" formControlName="quantity" min="1" max="10" />
-                    @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) {
-                      @if (orderForm.controls.quantity.hasError('required')) {
-                        <small>La cantidad es obligatoria.</small>
-                      } @else if (orderForm.controls.quantity.hasError('min')) {
-                        <small>La cantidad minima es 1.</small>
-                      } @else if (orderForm.controls.quantity.hasError('max')) {
-                        <small>La cantidad maxima por pedido es 10.</small>
-                      }
-                    }
+              <section class="checkout-panel">
+                <p class="eyebrow">Metodo de pago</p>
+                <div class="payment-options">
+                  <label class="payment-option">
+                    <input type="radio" formControlName="paymentMethod" value="cash" />
+                    <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+                    <span class="payment-option__copy">
+                      <strong>Pago en caja</strong>
+                      <small>Pagas directamente en el restaurante.</small>
+                    </span>
                   </label>
 
-                  <label class="field">
-                    <span>Detalles en restaurante</span>
-                    <textarea
-                      formControlName="notes"
-                      rows="4"
-                      placeholder="Mesa 4, a nombre de David, retirar a las 7:30, sin cebolla..."
-                    ></textarea>
-                    @if (orderForm.controls.notes.touched && orderForm.controls.notes.hasError('maxlength')) {
-                      <small>Los detalles no pueden superar 250 caracteres.</small>
-                    }
+                  <label class="payment-option">
+                    <input type="radio" formControlName="paymentMethod" value="card" />
+                    <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
+                    <span class="payment-option__copy">
+                      <strong>Tarjeta</strong>
+                      <small>Pago demo, listo para pasarela real.</small>
+                    </span>
                   </label>
 
-                  <button type="button" class="action-button action-button--primary" (click)="goToPaymentStep()">
-                    Continuar al pago
-                  </button>
-                </section>
-              } @else if (checkoutStep() === 'payment') {
-                <section class="checkout-panel">
-                  <p class="eyebrow">Metodo de pago</p>
-                  <div class="payment-options">
-                    <label class="payment-option">
-                      <input type="radio" formControlName="paymentMethod" value="cash" />
-                      <span class="material-symbols-outlined" aria-hidden="true">payments</span>
-                      <span class="payment-option__copy">
-                        <strong>Pago en caja</strong>
-                        <small>Pagas directamente en el restaurante.</small>
-                      </span>
-                    </label>
+                  <label class="payment-option">
+                    <input type="radio" formControlName="paymentMethod" value="transfer" />
+                    <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+                    <span class="payment-option__copy">
+                      <strong>Transferencia</strong>
+                      <small>Pago demo para pedidos anticipados.</small>
+                    </span>
+                  </label>
+                </div>
+              </section>
 
-                    <label class="payment-option">
-                      <input type="radio" formControlName="paymentMethod" value="card" />
-                      <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
-                      <span class="payment-option__copy">
-                        <strong>Tarjeta</strong>
-                        <small>Pago demo, listo para pasarela real.</small>
-                      </span>
-                    </label>
+              <label class="field">
+                <span>Detalles en restaurante</span>
+                <textarea
+                  formControlName="notes"
+                  rows="3"
+                  placeholder="Mesa 4, retirar a las 7:30, sin cebolla..."
+                ></textarea>
+                @if (orderForm.controls.notes.touched && orderForm.controls.notes.hasError('maxlength')) {
+                  <small>Los detalles no pueden superar 250 caracteres.</small>
+                }
+              </label>
 
-                    <label class="payment-option">
-                      <input type="radio" formControlName="paymentMethod" value="transfer" />
-                      <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
-                      <span class="payment-option__copy">
-                        <strong>Transferencia</strong>
-                        <small>Pago demo para pedidos anticipados.</small>
-                      </span>
-                    </label>
-                  </div>
+              <div class="checkout-summary cart-summary">
+                <div>
+                  <span>{{ cartItemsCount() }} productos</span>
+                  <strong>{{ checkoutTotal() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+                </div>
+                <div>
+                  <span>Pago</span>
+                  <strong>{{ paymentMethodLabel() }}</strong>
+                </div>
+              </div>
 
-                  <div class="action-row">
-                    <button type="button" class="action-button action-button--ghost" (click)="goToCheckoutStep('details')">
-                      Volver
-                    </button>
-                    <button type="button" class="action-button action-button--primary" (click)="goToReviewStep()">
-                      Revisar compra
-                    </button>
-                  </div>
-                </section>
-              } @else {
-                <section class="checkout-panel">
-                  <p class="eyebrow">Confirmacion</p>
-                  <div class="checkout-summary">
-                    <div>
-                      <span>Subtotal</span>
-                      <strong>{{ checkoutSubtotal() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
-                    </div>
-                    <div class="checkout-summary__total">
-                      <span>Total</span>
-                      <strong>{{ checkoutTotal() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
-                    </div>
-                    <div>
-                      <span>Pago</span>
-                      <strong>{{ paymentMethodLabel() }}</strong>
-                    </div>
-                  </div>
-
-                  <p class="checkout-note">
-                    Al confirmar, el pedido se enviara al restaurante. Puedes pedir desde la mesa o
-                    dejarlo anticipado para que el local lo gestione.
-                  </p>
-
-                  <div class="action-row">
-                    <button type="button" class="action-button action-button--ghost" (click)="goToCheckoutStep('payment')">
-                      Volver
-                    </button>
-                    <button type="submit" class="action-button action-button--primary" [disabled]="isSubmittingOrder()">
-                      {{ isSubmittingOrder() ? 'Enviando pedido...' : 'Confirmar pedido' }}
-                    </button>
-                  </div>
-                </section>
-              }
+              <button type="submit" class="action-button action-button--primary" [disabled]="isSubmittingOrder()">
+                {{ isSubmittingOrder() ? 'Enviando pedido...' : 'Confirmar pedido' }}
+              </button>
             </form>
           } @else {
             <div class="empty-state empty-state--compact">
@@ -298,8 +245,8 @@
                 <p class="eyebrow">Pedido</p>
                 <h3>Selecciona un plato</h3>
                 <p>
-                  Pulsa <strong>Pedir ahora</strong> en cualquier plato para escoger cantidad y
-                  enviar el pedido al propietario.
+                  Pulsa <strong>Agregar</strong> en los platos que quieras y arma tu pedido antes
+                  de enviarlo al propietario.
                 </p>
               }
             </div>

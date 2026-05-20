@@ -56,6 +56,16 @@ function normalizeControllerError(error, fallbackMessage) {
     };
   }
 
+  if (
+    rawMessage.startsWith('Stock insuficiente para') ||
+    rawMessage.startsWith('El insumo ')
+  ) {
+    return {
+      status: 400,
+      message: rawMessage,
+    };
+  }
+
   return {
     status: 500,
     message: rawMessage,

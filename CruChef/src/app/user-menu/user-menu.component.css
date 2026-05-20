@@ -58,7 +58,7 @@
 .section-heading p span,
 .order-total,
 .order-dish-price {
-  color: #ffd166;
+  color: #ff6b5a;
   font-weight: 700;
 }
 
@@ -187,11 +187,11 @@
   font: inherit;
   text-align: center;
   cursor: pointer;
-  transition: color 180ms ease, transform 180ms ease;
+  transition: color 180ms ease;
 }
 
 .restaurant-card:hover {
-  transform: scale(1.06);
+  transform: none;
   color: #ffffff;
 }
 
@@ -217,13 +217,13 @@
 
 .restaurant-card__body {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.12rem;
   min-width: 0;
 }
 
 .restaurant-card__name {
   color: #ffffff;
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -336,13 +336,15 @@
 }
 
 .action-button {
-  border: 0;
+  border: 1px solid rgba(255, 75, 47, 0.24);
   border-radius: 1rem;
   padding: 0.88rem 1rem;
   font-weight: 700;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffb8ad;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .dish-item .action-button {
@@ -350,11 +352,20 @@
 }
 
 .action-button--primary {
-  background: linear-gradient(135deg, #e65151, #b73d3d);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .action-button--ghost {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.action-button:hover:not(:disabled) {
+  transform: none;
+  border-color: rgba(255, 75, 47, 0.55);
+  background:
+    linear-gradient(135deg, rgba(80, 34, 30, 0.92), rgba(38, 24, 22, 0.92)),
+    rgba(255, 75, 47, 0.12);
+  color: #fff0ed;
 }
 
 .action-button:disabled {
@@ -366,6 +377,8 @@
   display: grid;
   gap: 1rem;
   align-self: start;
+  position: sticky;
+  top: 1rem;
 }
 
 .order-dish-preview {
@@ -700,65 +713,83 @@
 }
 
 .focus-panel {
-  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.35fr);
+  gap: 1.35rem;
+  align-items: stretch;
 }
 
 .restaurant-switcher {
-  flex-wrap: nowrap;
-  gap: 0.55rem;
-  overflow-x: auto;
-  padding-bottom: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  align-content: start;
+  gap: 0.75rem;
+  overflow: visible;
+  padding: 0;
 }
 
 .restaurant-card {
-  width: auto;
-  min-width: max-content;
-  min-height: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 4.35rem;
   display: inline-flex;
   align-items: center;
   justify-items: start;
-  gap: 0.55rem;
-  padding: 0.48rem 0.7rem;
+  gap: 0.68rem;
+  padding: 0.68rem 0.78rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 45%),
+    var(--surface);
   backdrop-filter: var(--glass-blur);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2), var(--glass-inset);
   text-align: left;
 }
 
 .restaurant-card:hover {
-  transform: translateY(-1px);
+  transform: none;
   color: var(--text);
+  border-color: rgba(255, 75, 47, 0.28);
 }
 
 .restaurant-card.is-active {
-  border-color: rgba(255, 75, 47, 0.4);
-  background: var(--accent-soft);
+  border-color: rgba(255, 75, 47, 0.46);
+  background:
+    linear-gradient(135deg, rgba(88, 34, 29, 0.68), rgba(28, 24, 24, 0.82)),
+    var(--accent-soft);
 }
 
 .restaurant-icon {
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 2.55rem;
+  height: 2.55rem;
   border-radius: 50%;
-  background: var(--surface-2);
-  font-size: 1.15rem;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(145deg, rgba(255, 95, 72, 0.28), rgba(92, 34, 29, 0.62));
+  color: #ffffff;
+  font-size: 1.32rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .restaurant-card.is-active .restaurant-icon {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.22), transparent 30%),
+    linear-gradient(145deg, rgba(255, 95, 72, 0.48), rgba(130, 43, 33, 0.72));
+  color: #ffffff;
 }
 
 .restaurant-card.is-active {
-  box-shadow: 0 10px 24px rgba(255, 75, 47, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .menu-layout,
 .history-layout {
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
   gap: 1.15rem;
+}
+
+.history-layout .order-panel {
+  margin-top: 1.35rem;
 }
 
 .dish-row {
@@ -775,10 +806,17 @@
 .action-button {
   border-radius: var(--radius-sm);
   padding: 0.72rem 0.9rem;
+  color: #f2ddd9;
 }
 
 .action-button--primary {
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.order-card .action-button {
+  margin-top: 0.85rem;
+  width: fit-content;
+  min-width: 10rem;
 }
 
 .field input,

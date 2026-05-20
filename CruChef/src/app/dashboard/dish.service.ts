@@ -143,6 +143,7 @@ export class DishService {
         typeof document['imageUrl'] === 'string'
           ? String(document['imageUrl'])
           : getDishImageUrl(imageKey),
+      stockRequirements: [],
     };
   }
 }

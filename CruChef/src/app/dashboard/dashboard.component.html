@@ -270,6 +270,65 @@
                 }
               </div>
 
+              <section class="recipe-panel" [formGroup]="recipeForm">
+                <div class="recipe-panel__header">
+                  <div>
+                    <span>Inventario requerido</span>
+                    <p>Cantidad que se descuenta por cada unidad vendida.</p>
+                  </div>
+                  <strong>{{ dishStockRequirements().length }}</strong>
+                </div>
+
+                @if (inventoryItems().length > 0) {
+                  <div class="recipe-form-grid">
+                    <label class="field">
+                      <span>Insumo</span>
+                      <select formControlName="itemId">
+                        <option value="">Selecciona un insumo</option>
+                        @for (item of inventoryItems(); track item.id) {
+                          <option [value]="item.id">
+                            {{ item.name }} · {{ item.quantity }} {{ item.unit }}
+                          </option>
+                        }
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Cantidad por plato</span>
+                      <input type="number" formControlName="quantity" min="0.001" step="0.001" />
+                    </label>
+                  </div>
+
+                  <button type="button" class="secondary-button recipe-add-button" (click)="addDishStockRequirement()">
+                    Agregar insumo
+                  </button>
+                } @else {
+                  <p class="recipe-empty">
+                    Registra insumos en Inventario antes de crear platos con descuento automatico.
+                  </p>
+                }
+
+                @if (dishStockRequirements().length > 0) {
+                  <div class="recipe-list">
+                    @for (requirement of dishStockRequirements(); track requirement.itemId) {
+                      <article class="recipe-chip">
+                        <div>
+                          <strong>{{ requirement.name }}</strong>
+                          <span>{{ requirement.quantity }} {{ requirement.unit }} por plato</span>
+                        </div>
+                        <button
+                          type="button"
+                          class="mini-button mini-button--danger"
+                          (click)="removeDishStockRequirement(requirement.itemId)"
+                        >
+                          Quitar
+                        </button>
+                      </article>
+                    }
+                  </div>
+                }
+              </section>
+
               <div class="image-preview">
                 <img [src]="previewImageUrl()" [alt]="dishForm.controls.name.value || 'Preview'" />
                 <p>Vista previa de la imagen del plato.</p>
@@ -333,6 +392,14 @@
                 <p>{{ viewedDish()!.restaurantName }}</p>
                 <p class="dish-viewer__price">{{ viewedDish()!.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
                 <p>Categoria: {{ viewedDishCategoryName() }}</p>
+                @if (viewedDish()!.stockRequirements.length > 0) {
+                  <div class="dish-recipe-summary">
+                    <span>Descuenta por unidad</span>
+                    @for (requirement of viewedDish()!.stockRequirements; track requirement.itemId) {
+                      <p>{{ requirement.quantity }} {{ requirement.unit }} de {{ requirement.name }}</p>
+                    }
+                  </div>
+                }
                 @if (viewedDish()!.ratingCount > 0) {
                   <p>Calificacion promedio: {{ viewedDish()!.rating }} / 5 con {{ viewedDish()!.ratingCount }} reseñas</p>
                 } @else {
@@ -384,7 +451,6 @@
       <section class="section-block fade-slide">
         <div class="section-heading">
           <div>
-            <h2>Pedidos recibidos</h2>
             <p>
               <span>{{ visibleActiveOwnerOrders().length }}</span> pedidos activos para atender.
             </p>
@@ -482,7 +548,6 @@
       <section class="section-block fade-slide">
         <div class="section-heading">
           <div>
-            <h2>Historial de pedidos</h2>
             <p>
               <span>{{ visibleHistoricalOwnerOrders().length }}</span> pedidos finalizados en tus restaurantes.
             </p>
@@ -563,7 +628,6 @@
       <section class="section-block fade-slide">
         <div class="section-heading">
           <div>
-            <h2>Inventario</h2>
             <p>
               @if (selectedRestaurant()) {
                 <span>{{ selectedRestaurant()!.name }}</span> como restaurante activo.
@@ -751,7 +815,6 @@
       <section class="section-block fade-slide">
         <div class="section-heading">
           <div>
-            <h2>Dashboard del restaurante</h2>
             <p>
               @if (selectedRestaurant()) {
                 <span>{{ selectedRestaurant()!.name }}</span> como restaurante activo para analizar.

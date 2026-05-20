@@ -57,6 +57,9 @@ function mapRestaurant(document, ownerUid, ownerEmailFallback = '') {
 
 function mapDish(document, restaurantId) {
   const data = document.data();
+  const rawStockRequirements = Array.isArray(data.stockRequirements)
+    ? data.stockRequirements
+    : [];
 
   return {
     id: document.id,
@@ -82,6 +85,14 @@ function mapDish(document, restaurantId) {
     imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : '',
     imageKey: typeof data.imageKey === 'string' ? data.imageKey : 'plate',
     categoryId: typeof data.categoryId === 'string' ? data.categoryId : 'burgers',
+    stockRequirements: rawStockRequirements
+      .map((requirement) => ({
+        itemId: typeof requirement.itemId === 'string' ? requirement.itemId : '',
+        name: typeof requirement.name === 'string' ? requirement.name : '',
+        unit: typeof requirement.unit === 'string' ? requirement.unit : '',
+        quantity: Number(requirement.quantity || 0),
+      }))
+      .filter((requirement) => requirement.itemId && requirement.quantity > 0),
   };
 }
 
@@ -116,6 +127,33 @@ async function notifyInventoryIfNeeded(authUser, restaurant, item) {
   } catch (error) {
     console.error('No se pudo crear la notificacion de inventario.', error);
   }
+}
+
+async function resolveDishStockRequirements(authUser, restaurantId, requirements) {
+  if (!requirements.length) {
+    return [];
+  }
+
+  const resolvedRequirements = [];
+
+  for (const requirement of requirements) {
+    const itemRef = ownerInventoryCollection(authUser.uid, restaurantId).doc(requirement.itemId);
+    const itemSnapshot = await itemRef.get();
+
+    if (!itemSnapshot.exists) {
+      throw new Error('Selecciona insumos validos para la receta del plato.');
+    }
+
+    const item = mapInventoryItem(itemSnapshot);
+    resolvedRequirements.push({
+      itemId: item.id,
+      name: item.name,
+      unit: item.unit,
+      quantity: requirement.quantity,
+    });
+  }
+
+  return resolvedRequirements;
 }
 
 async function loadRestaurant(ownerUid, restaurantId) {
@@ -203,8 +241,16 @@ async function createOwnerDish(authUser, restaurantId, body = {}) {
     return null;
   }
 
+  const payload = normalizeOwnerDishPayload(body, restaurant);
+  const stockRequirements = await resolveDishStockRequirements(
+    authUser,
+    restaurantId,
+    payload.stockRequirements,
+  );
+
   const documentRef = await ownerDishesCollection(authUser.uid, restaurantId).add({
-    ...normalizeOwnerDishPayload(body, restaurant),
+    ...payload,
+    stockRequirements,
     rating: 0,
     ratingCount: 0,
     ratingTotal: 0,
@@ -228,7 +274,17 @@ async function updateOwnerDish(authUser, restaurantId, dishId, body = {}) {
     return false;
   }
 
-  await documentRef.update(normalizeOwnerDishPayload(body, restaurant));
+  const payload = normalizeOwnerDishPayload(body, restaurant);
+  const stockRequirements = await resolveDishStockRequirements(
+    authUser,
+    restaurantId,
+    payload.stockRequirements,
+  );
+
+  await documentRef.update({
+    ...payload,
+    stockRequirements,
+  });
   const updatedSnapshot = await documentRef.get();
   return mapDish(updatedSnapshot, restaurantId);
 }
