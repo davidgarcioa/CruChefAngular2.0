@@ -38,6 +38,16 @@ function resolveRestaurantControllerError(error, fallbackMessage) {
     };
   }
 
+  if (
+    error.message.startsWith('Stock insuficiente para') ||
+    error.message.startsWith('El insumo ')
+  ) {
+    return {
+      status: 400,
+      message: error.message,
+    };
+  }
+
   return {
     status: 500,
     message: error.message || fallbackMessage,

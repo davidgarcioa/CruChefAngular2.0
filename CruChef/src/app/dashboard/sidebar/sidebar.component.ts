@@ -95,8 +95,16 @@ export class SidebarComponent {
 
   private getNotificationRoute(notification: AppNotification): string {
     if (this.role === 'owner') {
-      if (notification.type === 'inventory-low' || notification.type === 'inventory-empty') {
+      if (
+        notification.type === 'inventory-created' ||
+        notification.type === 'inventory-low' ||
+        notification.type === 'inventory-empty'
+      ) {
         return '/inventory';
+      }
+
+      if (notification.type === 'dish-created') {
+        return '/dishes';
       }
 
       if (notification.type === 'order-rated') {

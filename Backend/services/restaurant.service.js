@@ -114,18 +114,22 @@ async function notifyInventoryIfNeeded(authUser, restaurant, item) {
     return;
   }
 
+  await createNotificationSafely({
+    recipientUid: authUser.uid,
+    audience: 'owner',
+    type: item.quantity === 0 ? 'inventory-empty' : 'inventory-low',
+    title: item.quantity === 0 ? 'Insumo agotado' : 'Inventario bajo',
+    message: `${item.name} esta en ${item.quantity} ${item.unit}. Minimo: ${item.minimum} ${item.unit}.`,
+    restaurantId: restaurant.id,
+    restaurantName: restaurant.name,
+  });
+}
+
+async function createNotificationSafely(payload) {
   try {
-    await notificationService.createNotification({
-      recipientUid: authUser.uid,
-      audience: 'owner',
-      type: item.quantity === 0 ? 'inventory-empty' : 'inventory-low',
-      title: item.quantity === 0 ? 'Insumo agotado' : 'Inventario bajo',
-      message: `${item.name} esta en ${item.quantity} ${item.unit}. Minimo: ${item.minimum} ${item.unit}.`,
-      restaurantId: restaurant.id,
-      restaurantName: restaurant.name,
-    });
+    await notificationService.createNotification(payload);
   } catch (error) {
-    console.error('No se pudo crear la notificacion de inventario.', error);
+    console.error('No se pudo crear la notificacion.', error);
   }
 }
 
@@ -154,6 +158,51 @@ async function resolveDishStockRequirements(authUser, restaurantId, requirements
   }
 
   return resolvedRequirements;
+}
+
+async function buildDishStockMovements(authUser, restaurantId, stockRequirements, transaction) {
+  const inventoryRefs = stockRequirements.map((requirement) =>
+    ownerInventoryCollection(authUser.uid, restaurantId).doc(requirement.itemId),
+  );
+  const inventorySnapshots = await Promise.all(
+    inventoryRefs.map((inventoryRef) => transaction.get(inventoryRef)),
+  );
+
+  const stockMovements = stockRequirements.map((requirement, index) => {
+    const inventorySnapshot = inventorySnapshots[index];
+
+    if (!inventorySnapshot.exists) {
+      throw new Error(`El insumo ${requirement.name || requirement.itemId} ya no existe en inventario.`);
+    }
+
+    const inventoryData = inventorySnapshot.data();
+    const currentQuantity = Number(inventoryData.quantity || 0);
+    const minimum = Number(inventoryData.minimum || 0);
+    const requiredQuantity = requirement.quantity;
+    const nextQuantity = Number((currentQuantity - requiredQuantity).toFixed(3));
+
+    if (nextQuantity < 0) {
+      throw new Error(
+        `Stock insuficiente para ${inventoryData.name || requirement.name}. Disponible: ${currentQuantity} ${inventoryData.unit || requirement.unit}.`,
+      );
+    }
+
+    return {
+      itemId: requirement.itemId,
+      name: typeof inventoryData.name === 'string' ? inventoryData.name : requirement.name,
+      unit: typeof inventoryData.unit === 'string' ? inventoryData.unit : requirement.unit,
+      quantityPerDish: requirement.quantity,
+      deductedQuantity: requiredQuantity,
+      quantityBefore: currentQuantity,
+      quantityAfter: nextQuantity,
+      minimum,
+    };
+  });
+
+  return {
+    inventoryRefs,
+    stockMovements,
+  };
 }
 
 async function loadRestaurant(ownerUid, restaurantId) {
@@ -248,16 +297,62 @@ async function createOwnerDish(authUser, restaurantId, body = {}) {
     payload.stockRequirements,
   );
 
-  const documentRef = await ownerDishesCollection(authUser.uid, restaurantId).add({
-    ...payload,
-    stockRequirements,
-    rating: 0,
-    ratingCount: 0,
-    ratingTotal: 0,
+  const documentRef = ownerDishesCollection(authUser.uid, restaurantId).doc();
+  const stockMovements = await db.runTransaction(async (transaction) => {
+    const movementResult = await buildDishStockMovements(
+      authUser,
+      restaurantId,
+      stockRequirements,
+      transaction,
+    );
+
+    movementResult.stockMovements.forEach((movement, index) => {
+      transaction.update(movementResult.inventoryRefs[index], {
+        quantity: movement.quantityAfter,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    transaction.create(documentRef, {
+      ...payload,
+      stockRequirements,
+      stockDeductedOnCreate: true,
+      stockMovementsOnCreate: movementResult.stockMovements,
+      rating: 0,
+      ratingCount: 0,
+      ratingTotal: 0,
+    });
+
+    return movementResult.stockMovements;
   });
 
   const snapshot = await documentRef.get();
-  return mapDish(snapshot, restaurantId);
+  const dish = mapDish(snapshot, restaurantId);
+  const restaurantContext = { id: restaurantId, ...restaurant };
+
+  await createNotificationSafely({
+    recipientUid: authUser.uid,
+    audience: 'owner',
+    type: 'dish-created',
+    title: 'Plato creado',
+    message: `${dish.name} fue creado en ${restaurant.name} y se desconto inventario segun su receta.`,
+    restaurantId,
+    restaurantName: restaurant.name,
+    dishName: dish.name,
+  });
+
+  await Promise.all(
+    stockMovements.map((movement) =>
+      notifyInventoryIfNeeded(authUser, restaurantContext, {
+        name: movement.name,
+        unit: movement.unit,
+        quantity: movement.quantityAfter,
+        minimum: movement.minimum,
+      }),
+    ),
+  );
+
+  return dish;
 }
 
 async function updateOwnerDish(authUser, restaurantId, dishId, body = {}) {
@@ -333,6 +428,15 @@ async function createOwnerInventoryItem(authUser, restaurantId, body = {}) {
 
   const snapshot = await documentRef.get();
   const item = mapInventoryItem(snapshot);
+  await createNotificationSafely({
+    recipientUid: authUser.uid,
+    audience: 'owner',
+    type: 'inventory-created',
+    title: 'Insumo registrado',
+    message: `${item.name} fue registrado con ${item.quantity} ${item.unit} en ${restaurant.name}.`,
+    restaurantId,
+    restaurantName: restaurant.name,
+  });
   await notifyInventoryIfNeeded(authUser, { id: restaurantId, ...restaurant }, item);
   return item;
 }

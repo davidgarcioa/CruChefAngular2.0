@@ -147,6 +147,7 @@ export class OwnerService {
       ),
     );
     this.refreshDishes$.next();
+    this.refreshInventory$.next();
   }
 
   async updateDish(

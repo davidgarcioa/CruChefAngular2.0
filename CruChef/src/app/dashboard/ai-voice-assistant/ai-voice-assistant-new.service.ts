@@ -22,6 +22,20 @@ export interface DishResponse {
   transcript: string;
 }
 
+interface TranscriptionResponse {
+  success: boolean;
+  message?: string;
+  transcript: string;
+  confidence?: number;
+}
+
+interface VoiceHealthResponse {
+  openai_available?: boolean;
+  deepseek_available?: boolean;
+  local_whisper_available?: boolean;
+  audio_transcription_available?: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -29,24 +43,33 @@ export class AiVoiceAssistantService {
   private readonly BACKEND_URL = 'http://localhost:8000';
   private recognition: any = null;
   private stopResolver: ((transcript: string) => void) | null = null;
+  private mediaRecorder: MediaRecorder | null = null;
+  private mediaStream: MediaStream | null = null;
+  private audioChunks: Blob[] = [];
+  private recordingStartedAt = 0;
+  private backendAudioAvailable: boolean | null = null;
 
   isListening = signal(false);
   transcript = signal('');
   error = signal('');
   confidence = signal(0);
-  isSupported = signal(this.checkSpeechRecognitionSupport());
+  isSupported = signal(this.checkAudioInputSupport());
 
   constructor(private http: HttpClient) {
     console.log(
-      '[VoiceService] SpeechRecognition soportado:',
+      '[VoiceService] Entrada de voz soportada:',
       this.isSupported()
     );
     console.log('[VoiceService] Inicializado. Backend URL:', this.BACKEND_URL);
   }
 
-  private checkSpeechRecognitionSupport(): boolean {
+  private checkAudioInputSupport(): boolean {
     if (typeof window === 'undefined') {
       return false;
+    }
+
+    if (Boolean(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== 'undefined') {
+      return true;
     }
 
     const speechRecognition =
@@ -152,7 +175,7 @@ export class AiVoiceAssistantService {
 
   async startListening(): Promise<void> {
     if (!this.isSupported()) {
-      this.error.set('SpeechRecognition no esta soportado en este navegador');
+      this.error.set('La entrada de voz no esta soportada en este navegador');
       return;
     }
 
@@ -165,6 +188,11 @@ export class AiVoiceAssistantService {
       this.error.set('');
       this.confidence.set(0);
 
+      if (await this.shouldUseBackendAudio()) {
+        await this.startMediaRecording();
+        return;
+      }
+
       const recognition = this.ensureRecognition();
       recognition.start();
     } catch (error: any) {
@@ -176,6 +204,10 @@ export class AiVoiceAssistantService {
   }
 
   async stopListening(): Promise<string> {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      return this.stopMediaRecording();
+    }
+
     if (!this.recognition || !this.isListening()) {
       return this.transcript().trim();
     }
@@ -184,6 +216,156 @@ export class AiVoiceAssistantService {
       this.stopResolver = resolve;
       this.recognition.stop();
     });
+  }
+
+  private async startMediaRecording(): Promise<void> {
+    this.audioChunks = [];
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const mimeType = this.resolveRecordingMimeType();
+    this.mediaRecorder = mimeType
+      ? new MediaRecorder(this.mediaStream, { mimeType })
+      : new MediaRecorder(this.mediaStream);
+
+    this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
+      if (event.data.size > 0) {
+        this.audioChunks.push(event.data);
+      }
+    };
+
+    this.mediaRecorder.onerror = (event) => {
+      console.error('[VoiceService] Error MediaRecorder:', event);
+      this.error.set('No fue posible grabar el audio del microfono.');
+      this.isListening.set(false);
+      this.stopMediaTracks();
+    };
+
+    this.recordingStartedAt = Date.now();
+    this.mediaRecorder.start(250);
+    this.isListening.set(true);
+  }
+
+  private async shouldUseBackendAudio(): Promise<boolean> {
+    if (!this.canRecordAudio()) {
+      return false;
+    }
+
+    return this.isBackendAudioAvailable();
+  }
+
+  private canRecordAudio(): boolean {
+    return Boolean(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== 'undefined';
+  }
+
+  private async isBackendAudioAvailable(): Promise<boolean> {
+    if (this.backendAudioAvailable !== null) {
+      return this.backendAudioAvailable;
+    }
+
+    try {
+      const health = await firstValueFrom(
+        this.http.get<VoiceHealthResponse>(`${this.BACKEND_URL}/health`)
+      );
+      this.backendAudioAvailable = Boolean(health.audio_transcription_available);
+      return this.backendAudioAvailable;
+    } catch {
+      this.backendAudioAvailable = false;
+      return false;
+    }
+  }
+
+  private async stopMediaRecording(): Promise<string> {
+    if (!this.mediaRecorder) {
+      return '';
+    }
+
+    return new Promise((resolve) => {
+      const recorder = this.mediaRecorder;
+      if (!recorder) {
+        resolve('');
+        return;
+      }
+
+      recorder.onstop = async () => {
+        this.isListening.set(false);
+        this.stopMediaTracks();
+
+        const recordingMs = Date.now() - this.recordingStartedAt;
+        const blob = new Blob(this.audioChunks, {
+          type: recorder.mimeType || 'audio/webm',
+        });
+        this.audioChunks = [];
+        this.recordingStartedAt = 0;
+
+        if (recordingMs < 700 || blob.size < 1200) {
+          const message = 'La grabacion fue muy corta. Mantén Escuchar activo al menos un segundo y habla claramente.';
+          this.error.set(message);
+          resolve('');
+          return;
+        }
+
+        try {
+          const transcript = await this.transcribeAudio(blob);
+          resolve(transcript);
+        } catch (error: any) {
+          const backendMessage = error?.error?.message || error?.error?.detail;
+          const message =
+            error?.status === 0
+              ? 'Backend de voz no disponible. Inicia Python en http://localhost:8000.'
+              : backendMessage || error?.message || 'No fue posible transcribir el audio grabado.';
+          this.error.set(message);
+          resolve('');
+        }
+      };
+
+      recorder.stop();
+    });
+  }
+
+  private async transcribeAudio(audioBlob: Blob): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'voice.webm');
+
+    let response: TranscriptionResponse;
+    try {
+      response = await firstValueFrom(
+        this.http.post<TranscriptionResponse>(`${this.BACKEND_URL}/transcribe-only`, formData)
+      );
+    } catch (error: any) {
+      const backendMessage = error?.error?.message || error?.error?.detail;
+      const message =
+        error?.status === 0
+          ? 'Backend de voz no disponible. Inicia Python en http://localhost:8000.'
+          : backendMessage || `El backend de voz respondio con error ${error?.status || ''}.`;
+      throw new Error(message);
+    }
+
+    if (!response.success || !response.transcript) {
+      throw new Error(response.message || 'El backend no devolvio una transcripcion valida.');
+    }
+
+    const transcript = this.normalizeTranscript(response.transcript);
+    this.transcript.set(transcript);
+    this.confidence.set(response.confidence || 1);
+    this.error.set('');
+    return transcript;
+  }
+
+  private resolveRecordingMimeType(): string {
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+    ];
+
+    return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) || '';
+  }
+
+  private stopMediaTracks(): void {
+    this.mediaStream?.getTracks().forEach((track) => track.stop());
+    this.mediaStream = null;
+    this.mediaRecorder = null;
   }
 
   async sendTranscriptToBackend(
@@ -235,6 +417,11 @@ export class AiVoiceAssistantService {
   }
 
   abortListening(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.stopMediaTracks();
+
     if (this.recognition && this.isListening()) {
       this.recognition.stop();
     }
