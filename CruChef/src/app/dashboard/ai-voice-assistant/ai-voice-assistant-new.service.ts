@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environment';
 
 export interface VoiceCommand {
   dishName?: string;
@@ -40,7 +41,7 @@ interface VoiceHealthResponse {
   providedIn: 'root',
 })
 export class AiVoiceAssistantService {
-  private readonly BACKEND_URL = 'http://localhost:8000';
+  private readonly BACKEND_URL = environment.voiceBackendUrl;
   private recognition: any = null;
   private stopResolver: ((transcript: string) => void) | null = null;
   private mediaRecorder: MediaRecorder | null = null;

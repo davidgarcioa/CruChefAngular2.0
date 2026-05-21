@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Subject } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
+import { environment } from '../../environment';
 
 declare global {
   interface Window {
@@ -33,7 +34,7 @@ export interface DishResponse {
   providedIn: 'root',
 })
 export class AiVoiceAssistantService {
-  private readonly BACKEND_URL = 'http://localhost:8000';
+  private readonly BACKEND_URL = environment.voiceBackendUrl;
   private readonly platformId = inject(PLATFORM_ID);
   private recognition: any = null;
 

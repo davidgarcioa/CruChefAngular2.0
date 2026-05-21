@@ -1,5 +1,7 @@
 import logging
 import os
+import base64
+import json
 import tempfile
 from datetime import datetime
 
@@ -23,8 +25,37 @@ local_whisper_model = None
 app = Flask(__name__)
 CORS(app)
 
+
+def get_firebase_credential():
+    service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+    service_account_base64 = os.getenv("FIREBASE_SERVICE_ACCOUNT_BASE64", "").strip()
+
+    if service_account_json:
+        payload = json.loads(service_account_json)
+        if isinstance(payload.get("private_key"), str):
+            payload["private_key"] = payload["private_key"].replace("\\n", "\n")
+        return credentials.Certificate(payload)
+
+    if service_account_base64:
+        decoded_payload = base64.b64decode(service_account_base64).decode("utf-8")
+        payload = json.loads(decoded_payload)
+        if isinstance(payload.get("private_key"), str):
+            payload["private_key"] = payload["private_key"].replace("\\n", "\n")
+        return credentials.Certificate(payload)
+
+    if os.path.exists("firebase-key.json"):
+        return credentials.Certificate("firebase-key.json")
+
+    if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        return credentials.ApplicationDefault()
+
+    raise RuntimeError(
+        "No se encontro FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_SERVICE_ACCOUNT_BASE64, firebase-key.json ni GOOGLE_APPLICATION_CREDENTIALS."
+    )
+
+
 try:
-    firebase_cred = credentials.Certificate('firebase-key.json')
+    firebase_cred = get_firebase_credential()
     firebase_admin.initialize_app(firebase_cred)
     db = firestore.client()
     logger.info("Firebase inicializado")
@@ -281,5 +312,6 @@ def extract_dish_only():
 
 
 if __name__ == '__main__':
-    logger.info("Iniciando servidor en http://0.0.0.0:8000")
-    app.run(host='0.0.0.0', port=8000, debug=False)
+    port = int(os.getenv("PORT", "8000"))
+    logger.info("Iniciando servidor en http://0.0.0.0:%s", port)
+    app.run(host='0.0.0.0', port=port, debug=False)
