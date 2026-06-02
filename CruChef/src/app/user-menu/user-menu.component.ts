@@ -81,6 +81,12 @@ export class UserMenuComponent {
     quantity: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
     notes: ['', [Validators.maxLength(formMaxLengths.notes)]],
     paymentMethod: ['cash', Validators.required],
+    cardholderName: ['', [Validators.maxLength(80)]],
+    cardNumber: ['', [Validators.maxLength(23)]],
+    cardExpiry: ['', [Validators.maxLength(5)]],
+    cardCvv: ['', [Validators.maxLength(4)]],
+    transferBank: ['', [Validators.maxLength(80)]],
+    transferReference: ['', [Validators.maxLength(40)]],
   });
 
   readonly ratingForm = this.fb.nonNullable.group({
@@ -302,6 +308,7 @@ export class UserMenuComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((paymentMethod) => {
         this.selectedPaymentMethod.set(paymentMethod || 'cash');
+        this.orderActionError.set('');
       });
   }
 
@@ -364,6 +371,23 @@ export class UserMenuComponent {
     this.cartItems.update((items) => items.filter((item) => item.dish.id !== dishId));
   }
 
+  selectPaymentMethod(paymentMethod: 'cash' | 'card' | 'transfer'): void {
+    this.orderForm.controls.paymentMethod.setValue(paymentMethod);
+    this.selectedPaymentMethod.set(paymentMethod);
+    this.orderActionError.set('');
+
+    if (paymentMethod === 'cash') {
+      this.orderForm.patchValue({
+        cardholderName: '',
+        cardNumber: '',
+        cardExpiry: '',
+        cardCvv: '',
+        transferBank: '',
+        transferReference: '',
+      });
+    }
+  }
+
   goToPaymentStep(): void {
     if (this.cartItems().length === 0) {
       this.orderActionError.set('Agrega al menos un plato al pedido.');
@@ -377,6 +401,10 @@ export class UserMenuComponent {
     this.orderForm.controls.paymentMethod.markAsTouched();
 
     if (this.orderForm.controls.paymentMethod.invalid) {
+      return;
+    }
+
+    if (!this.validatePaymentSimulation()) {
       return;
     }
 
@@ -398,6 +426,10 @@ export class UserMenuComponent {
 
     if (!restaurant || items.length === 0) {
       this.orderActionError.set('Agrega al menos un plato al pedido.');
+      return;
+    }
+
+    if (!this.validatePaymentSimulation()) {
       return;
     }
 
@@ -426,6 +458,12 @@ export class UserMenuComponent {
         quantity: 1,
         notes: '',
         paymentMethod: 'cash',
+        cardholderName: '',
+        cardNumber: '',
+        cardExpiry: '',
+        cardCvv: '',
+        transferBank: '',
+        transferReference: '',
       });
       this.orderQuantity.set(1);
       this.selectedPaymentMethod.set('cash');
@@ -509,5 +547,113 @@ export class UserMenuComponent {
 
   canRateOrder(order: Order): boolean {
     return order.status === 'delivered' && order.rating == null;
+  }
+
+  formatCardNumber(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const formattedValue = this.onlyDigits(input.value)
+      .slice(0, 19)
+      .replace(/(.{4})/g, '$1 ')
+      .trim();
+
+    input.value = formattedValue;
+    this.orderForm.controls.cardNumber.setValue(formattedValue, { emitEvent: false });
+  }
+
+  formatCardExpiry(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = this.onlyDigits(input.value).slice(0, 4);
+    const formattedValue =
+      digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+
+    input.value = formattedValue;
+    this.orderForm.controls.cardExpiry.setValue(formattedValue, { emitEvent: false });
+  }
+
+  formatCardCvv(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const formattedValue = this.onlyDigits(input.value).slice(0, 4);
+
+    input.value = formattedValue;
+    this.orderForm.controls.cardCvv.setValue(formattedValue, { emitEvent: false });
+  }
+
+  onlyDigits(value: string): string {
+    return value.replace(/\D/g, '');
+  }
+
+  isCardExpiryValid(value: string): boolean {
+    const match = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(value.trim());
+
+    if (!match) {
+      return false;
+    }
+
+    const month = Number(match[1]);
+    const year = 2000 + Number(match[2]);
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1;
+    const currentYear = today.getFullYear();
+
+    return year > currentYear || (year === currentYear && month >= currentMonth);
+  }
+
+  isCardCvvValid(value: string): boolean {
+    const cardCvv = this.onlyDigits(value);
+    return cardCvv.length >= 3 && cardCvv.length <= 4;
+  }
+
+  private validatePaymentSimulation(): boolean {
+    const paymentMethod = this.orderForm.controls.paymentMethod.value;
+
+    if (paymentMethod === 'card') {
+      this.orderForm.controls.cardholderName.markAsTouched();
+      this.orderForm.controls.cardNumber.markAsTouched();
+      this.orderForm.controls.cardExpiry.markAsTouched();
+      this.orderForm.controls.cardCvv.markAsTouched();
+      const cardholderName = this.orderForm.controls.cardholderName.value.trim();
+      const cardNumber = this.onlyDigits(this.orderForm.controls.cardNumber.value);
+      const cardExpiry = this.orderForm.controls.cardExpiry.value.trim();
+      const cardCvv = this.onlyDigits(this.orderForm.controls.cardCvv.value);
+
+      if (cardholderName.length < 3) {
+        this.orderActionError.set('Escribe el nombre del titular de la tarjeta demo.');
+        return false;
+      }
+
+      if (cardNumber.length < 12 || cardNumber.length > 19) {
+        this.orderActionError.set('Escribe un numero de tarjeta demo valido.');
+        return false;
+      }
+
+      if (!this.isCardExpiryValid(cardExpiry)) {
+        this.orderActionError.set('Escribe una fecha de vencimiento vigente en formato MM/AA.');
+        return false;
+      }
+
+      if (!this.isCardCvvValid(cardCvv)) {
+        this.orderActionError.set('Escribe un CVV demo valido.');
+        return false;
+      }
+    }
+
+    if (paymentMethod === 'transfer') {
+      this.orderForm.controls.transferBank.markAsTouched();
+      this.orderForm.controls.transferReference.markAsTouched();
+      const transferBank = this.orderForm.controls.transferBank.value.trim();
+      const transferReference = this.orderForm.controls.transferReference.value.trim();
+
+      if (transferBank.length < 2) {
+        this.orderActionError.set('Selecciona o escribe el banco de la transferencia demo.');
+        return false;
+      }
+
+      if (transferReference.length < 4) {
+        this.orderActionError.set('Escribe una referencia de transferencia demo.');
+        return false;
+      }
+    }
+
+    return true;
   }
 }

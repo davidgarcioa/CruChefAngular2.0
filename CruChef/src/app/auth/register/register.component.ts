@@ -16,6 +16,7 @@ import {
   formPatterns,
   normalizeEmailInput,
   normalizeTextInput,
+  strongPasswordValidator,
   trimmedRequired,
 } from '../../shared/form-validators';
 
@@ -83,7 +84,7 @@ export class RegisterComponent {
         '',
         [
           Validators.required,
-          Validators.minLength(6),
+          strongPasswordValidator,
           Validators.maxLength(formMaxLengths.password),
         ],
       ],
@@ -127,5 +128,18 @@ export class RegisterComponent {
     } finally {
       this.isSubmitting.set(false);
     }
+  }
+
+  passwordRules(): Array<{ label: string; valid: boolean }> {
+    const password = this.form.controls.password.value;
+
+    return [
+      { label: 'Minimo 8 caracteres', valid: password.length >= 8 },
+      { label: 'Una letra mayuscula', valid: /[A-Z]/.test(password) },
+      { label: 'Una letra minuscula', valid: /[a-z]/.test(password) },
+      { label: 'Un numero', valid: /\d/.test(password) },
+      { label: 'Un simbolo', valid: /[^A-Za-z0-9]/.test(password) },
+      { label: 'Sin espacios', valid: password.length > 0 && !/\s/.test(password) },
+    ];
   }
 }

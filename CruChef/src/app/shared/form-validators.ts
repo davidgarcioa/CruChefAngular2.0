@@ -34,6 +34,27 @@ export const trimmedRequired: ValidatorFn = (
   return value.trim().length > 0 ? null : { trimmedRequired: true };
 };
 
+export const strongPasswordValidator: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
+  const value = readTextValue(control.value);
+
+  if (!value) {
+    return null;
+  }
+
+  const errors = {
+    minLength: value.length < 8,
+    uppercase: !/[A-Z]/.test(value),
+    lowercase: !/[a-z]/.test(value),
+    number: !/\d/.test(value),
+    symbol: !/[^A-Za-z0-9]/.test(value),
+    noSpaces: /\s/.test(value),
+  };
+
+  return Object.values(errors).some(Boolean) ? { strongPassword: errors } : null;
+};
+
 export function normalizeTextInput(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }

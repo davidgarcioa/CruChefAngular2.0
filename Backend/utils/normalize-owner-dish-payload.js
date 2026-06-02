@@ -51,7 +51,7 @@ function normalizeOwnerDishPayload(body = {}, restaurant) {
   }
 
   if (stockRequirements.length === 0) {
-    throw new Error('Agrega al menos un insumo requerido para descontar inventario.');
+    throw new Error('Agrega al menos un insumo requerido para calcular el inventario por pedido.');
   }
 
   const imageKey = getCategoryImageKey(categoryId);

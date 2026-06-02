@@ -4,6 +4,10 @@ const {
   postOwnerRestaurant,
   putOwnerRestaurant,
   deleteOwnerRestaurant,
+  getAdminRestaurants,
+  verifyAdminRestaurant,
+  getAdminRestaurantDishes,
+  deleteAdminRestaurant,
   getOwnerDishes,
   postOwnerDish,
   putOwnerDish,
@@ -15,8 +19,32 @@ const {
 } = require('../controllers/restaurant.controller');
 const { requireFirestore } = require('../middleware/require-firestore');
 const { requireAuth } = require('../middleware/require-auth');
+const { requireAdmin } = require('../middleware/require-admin');
 
 const router = express.Router();
+
+router.get('/admin/restaurants', requireFirestore, requireAuth, requireAdmin, getAdminRestaurants);
+router.put(
+  '/admin/restaurants/:ownerUid/:restaurantId/verify',
+  requireFirestore,
+  requireAuth,
+  requireAdmin,
+  verifyAdminRestaurant,
+);
+router.get(
+  '/admin/restaurants/:ownerUid/:restaurantId/dishes',
+  requireFirestore,
+  requireAuth,
+  requireAdmin,
+  getAdminRestaurantDishes,
+);
+router.delete(
+  '/admin/restaurants/:ownerUid/:restaurantId',
+  requireFirestore,
+  requireAuth,
+  requireAdmin,
+  deleteAdminRestaurant,
+);
 
 router.get('/owner/restaurants', requireFirestore, requireAuth, getOwnerRestaurants);
 router.post('/owner/restaurants', requireFirestore, requireAuth, postOwnerRestaurant);

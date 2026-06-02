@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './auth/auth.guard';
+import { AdminRestaurantsComponent } from './admin/admin-restaurants.component';
+import { adminGuard } from './admin/admin.guard';
 import { LoginComponent } from './auth/login/login.component';
 import { OwnerSetupComponent } from './auth/owner-setup/owner-setup.component';
 import { RegisterComponent } from './auth/register/register.component';
@@ -15,6 +17,11 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  {
+    path: 'admin/restaurants',
+    component: AdminRestaurantsComponent,
+    canActivate: [authGuard, adminGuard],
+  },
   { path: 'select-role', component: RoleSelectorComponent, canActivate: [authGuard] },
   {
     path: 'owner/setup',

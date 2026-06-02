@@ -24,6 +24,7 @@ export interface Order {
   totalPrice: number;
   notes: string;
   paymentMethod: string;
+  paymentDetails: Record<string, string> | null;
   paymentStatus: string;
   status: OrderStatus;
   createdAtMs: number;

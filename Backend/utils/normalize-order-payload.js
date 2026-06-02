@@ -7,6 +7,67 @@
   'cancelled',
 ];
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function isCardExpiryValid(value) {
+  const match = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(value);
+
+  if (!match) {
+    return false;
+  }
+
+  const month = Number(match[1]);
+  const year = 2000 + Number(match[2]);
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+
+  return year > currentYear || (year === currentYear && month >= currentMonth);
+}
+
+function normalizePaymentDetails(body, paymentMethod) {
+  const details =
+    body && typeof body.paymentDetails === 'object' && body.paymentDetails !== null
+      ? body.paymentDetails
+      : {};
+
+  if (paymentMethod === 'card') {
+    const cardholderName = normalizeText(details.cardholderName);
+    const cardLast4 = normalizeText(details.cardLast4).replace(/\D/g, '').slice(-4);
+    const cardExpiry = normalizeText(details.cardExpiry);
+
+    if (cardholderName.length < 3 || cardLast4.length !== 4 || !isCardExpiryValid(cardExpiry)) {
+      throw new Error('Los datos de tarjeta demo no son validos.');
+    }
+
+    return {
+      type: 'card',
+      cardholderName,
+      cardLast4,
+      cardExpiry,
+    };
+  }
+
+  if (paymentMethod === 'transfer') {
+    const transferBank = normalizeText(details.transferBank);
+    const transferReference = normalizeText(details.transferReference);
+
+    if (transferBank.length < 2 || transferReference.length < 4) {
+      throw new Error('Los datos de transferencia demo no son validos.');
+    }
+
+    return {
+      type: 'transfer',
+      transferBank,
+      transferReference,
+    };
+  }
+
+  return null;
+}
+
 function normalizeOrderPayload(body) {
   const ownerUid = typeof body.ownerUid === 'string' ? body.ownerUid.trim() : '';
   const restaurantId = typeof body.restaurantId === 'string' ? body.restaurantId.trim() : '';
@@ -49,6 +110,8 @@ function normalizeOrderPayload(body) {
     throw new Error('El metodo de pago no es valido.');
   }
 
+  const paymentDetails = normalizePaymentDetails(body, paymentMethod);
+
   return {
     ownerUid,
     restaurantId,
@@ -66,6 +129,7 @@ function normalizeOrderPayload(body) {
     totalPrice: quantity * unitPrice,
     notes,
     paymentMethod,
+    paymentDetails,
     paymentStatus: paymentMethod === 'cash' ? 'pending' : 'approved',
     status: 'pending',
     rating: null,

@@ -1,0 +1,260 @@
+<main class="main-layout">
+  <app-sidebar [items]="navigationItems" settingsRoute="/admin/restaurants" role="owner"></app-sidebar>
+
+  <section class="content-shell">
+    <header class="content-header">
+      <div class="header-copy">
+        <p class="eyebrow">Panel administrativo CruChef</p>
+        <h1>Gestion de restaurantes</h1>
+      </div>
+
+      <button type="button" class="secondary-button refresh-button" (click)="loadRestaurants()" [disabled]="isLoading()">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Actualizar
+      </button>
+    </header>
+
+    <section class="role-entry-panel section-block fade-slide">
+      <div>
+        <p class="eyebrow">Acceso rapido</p>
+        <h2>Entrar como usuario o propietario</h2>
+        <p>Usa tu misma sesion de administrador para revisar la experiencia de cada rol.</p>
+      </div>
+
+      <div class="role-entry-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="navigatingRole() !== null"
+          (click)="enterAsUser()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span>
+          {{ navigatingRole() === 'user' ? 'Entrando...' : 'Entrar como usuario' }}
+        </button>
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="navigatingRole() !== null"
+          (click)="enterAsOwner()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">storefront</span>
+          {{ navigatingRole() === 'owner' ? 'Entrando...' : 'Entrar como propietario' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="stats-grid section-block fade-slide">
+      <article class="stat-card">
+        <p class="eyebrow">Pendientes</p>
+        <h3>{{ pendingCount() }}</h3>
+        <p>Restaurantes esperando revision administrativa.</p>
+      </article>
+
+      <article class="stat-card">
+        <p class="eyebrow">Verificados</p>
+        <h3>{{ verifiedCount() }}</h3>
+        <p>Restaurantes visibles como aprobados.</p>
+      </article>
+
+      <article class="stat-card">
+        <p class="eyebrow">Total</p>
+        <h3>{{ restaurants().length }}</h3>
+        <p>Restaurantes creados por todos los propietarios.</p>
+      </article>
+    </section>
+
+    @if (successMessage()) {
+      <p class="status-message status-message--success section-block">{{ successMessage() }}</p>
+    }
+
+    @if (errorMessage()) {
+      <p class="status-message status-message--error section-block">{{ errorMessage() }}</p>
+    }
+
+    <section class="owner-layout section-block fade-slide delay-1">
+      <div class="owner-side">
+        <section class="restaurants-panel restaurants-panel--summary">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <h2>Restaurantes registrados</h2>
+              <p><span>{{ restaurants().length }}</span> restaurantes disponibles para revisar.</p>
+            </div>
+          </div>
+
+          @if (isLoading()) {
+            <div class="empty-card">
+              <h3>Cargando restaurantes</h3>
+              <p>Estamos consultando Firebase y el backend local.</p>
+            </div>
+          } @else if (restaurants().length > 0) {
+            <div class="restaurant-list">
+              @for (restaurant of restaurants(); track trackRestaurant(restaurant)) {
+                <article
+                  class="restaurant-card"
+                  [class.is-selected]="getRestaurantKey(restaurant) === selectedRestaurantId()"
+                  (click)="selectRestaurant(restaurant)"
+                >
+                  <div class="restaurant-card__top">
+                    <div>
+                      <h3>{{ restaurant.name }}</h3>
+                      <p>{{ restaurant.city }} - {{ restaurant.phone }}</p>
+                    </div>
+                    <span
+                      class="verification-pill"
+                      [class.verification-pill--verified]="restaurant.verificationStatus === 'verified'"
+                      [class.verification-pill--pending]="restaurant.verificationStatus !== 'verified'"
+                    >
+                      {{ restaurant.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
+                    </span>
+                  </div>
+
+                  <p>{{ restaurant.address }}</p>
+                  <p>{{ restaurant.schedule }}</p>
+                  <p>RUT: {{ restaurant.rutFileName || restaurant.rut || 'Archivo cargado' }}</p>
+                  <p>Correo vinculado: {{ restaurant.ownerEmail || 'Sin correo' }}</p>
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-card">
+              <h3>No hay restaurantes creados</h3>
+              <p>Cuando un propietario registre uno, aparecera aqui para verificarlo.</p>
+            </div>
+          }
+        </section>
+      </div>
+
+      <section class="admin-detail-panel">
+        <div class="section-heading section-heading--stacked">
+          <div>
+            <h2>Revision administrativa</h2>
+            @if (selectedRestaurant(); as restaurant) {
+              <p><span>{{ restaurant.name }}</span> esta seleccionado.</p>
+            } @else {
+              <p><span>Selecciona</span> un restaurante para ver sus datos y platos.</p>
+            }
+          </div>
+        </div>
+
+        @if (selectedRestaurant(); as restaurant) {
+          <article class="dashboard-hero admin-hero">
+            <div>
+              <p class="eyebrow">Restaurante activo</p>
+              <h2>{{ restaurant.name }}</h2>
+              <p>
+                {{ restaurant.city }} - {{ restaurant.phone }} -
+                {{ restaurant.schedule }}
+              </p>
+            </div>
+
+            <span
+              class="verification-pill"
+              [class.verification-pill--verified]="restaurant.verificationStatus === 'verified'"
+              [class.verification-pill--pending]="restaurant.verificationStatus !== 'verified'"
+            >
+              {{ restaurant.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
+            </span>
+          </article>
+
+          <div class="admin-action-row">
+            <button
+              type="button"
+              class="primary-button"
+              [disabled]="restaurant.verificationStatus === 'verified' || actionRestaurantId() === restaurant.id"
+              (click)="verifyRestaurant(restaurant)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">verified</span>
+              Verificar restaurante
+            </button>
+
+            <button
+              type="button"
+              class="danger-button"
+              [disabled]="actionRestaurantId() === restaurant.id"
+              (click)="deleteRestaurant(restaurant)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              Eliminar restaurante
+            </button>
+          </div>
+
+          <section class="dashboard-details admin-details">
+            <article class="dashboard-panel">
+              <div class="section-heading section-heading--stacked">
+                <div>
+                  <h2>Datos registrados</h2>
+                  <p>Informacion que el propietario puso al crear el restaurante.</p>
+                </div>
+              </div>
+
+              <dl class="details-grid">
+                @for (detail of selectedRestaurantDetails(); track detail.label) {
+                  <div>
+                    <dt>{{ detail.label }}</dt>
+                    <dd>{{ detail.value }}</dd>
+                  </div>
+                }
+              </dl>
+            </article>
+
+            <article class="dashboard-panel">
+              <div class="section-heading section-heading--stacked">
+                <div>
+                  <h2>Platos del restaurante</h2>
+                  <p><span>{{ dishes().length }}</span> platos guardados por el propietario.</p>
+                </div>
+              </div>
+
+              @if (dishErrorMessage()) {
+                <p class="status-message status-message--error">{{ dishErrorMessage() }}</p>
+              }
+
+              @if (isLoadingDishes()) {
+                <div class="empty-card">
+                  <h3>Cargando platos</h3>
+                  <p>Consultando el catalogo del restaurante seleccionado.</p>
+                </div>
+              } @else if (dishes().length > 0) {
+                <div class="admin-dish-list">
+                  @for (dish of dishes(); track dish.id) {
+                    <article class="top-dish-item admin-dish-item">
+                      <img [src]="dish.imageUrl" [alt]="dish.name" />
+                      <div>
+                        <h3>{{ dish.name }}</h3>
+                        <p>{{ dish.price | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p>
+                        @if (dish.stockRequirements.length > 0) {
+                          <div class="recipe-inline">
+                            <span>Receta:</span>
+                            @for (requirement of dish.stockRequirements; track requirement.itemId; let last = $last) {
+                              <span>
+                                {{ requirement.quantity }} {{ requirement.unit }} de {{ requirement.name }}{{ last ? '' : ', ' }}
+                              </span>
+                            }
+                          </div>
+                        } @else {
+                          <p>Sin insumos vinculados.</p>
+                        }
+                      </div>
+                      <strong>{{ dish.ratingCount > 0 ? dish.rating + '/5' : 'Sin notas' }}</strong>
+                    </article>
+                  }
+                </div>
+              } @else {
+                <div class="empty-card">
+                  <h3>Sin platos creados</h3>
+                  <p>Este restaurante todavia no tiene platos registrados.</p>
+                </div>
+              }
+            </article>
+          </section>
+        } @else {
+          <div class="empty-card">
+            <h3>Sin restaurante seleccionado</h3>
+            <p>Elige un restaurante de la lista para revisar sus datos y platos.</p>
+          </div>
+        }
+      </section>
+    </section>
+  </section>
+</main>

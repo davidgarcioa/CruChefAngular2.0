@@ -7,6 +7,7 @@ import { AuthShellComponent } from '../auth-shell/auth-shell.component';
 import { AuthService } from '../auth.service';
 import { RoleService } from '../role.service';
 import { formMaxLengths, normalizeEmailInput, trimmedRequired } from '../../shared/form-validators';
+import { isAdminEmail } from '../../admin/admin.config';
 
 @Component({
   selector: 'app-login',
@@ -76,7 +77,9 @@ export class LoginComponent {
       }
 
       this.roleService.clearRole();
-      await this.router.navigateByUrl('/select-role');
+      await this.router.navigateByUrl(
+        isAdminEmail(result.user.email) ? '/admin/restaurants' : '/select-role',
+      );
     } catch (error) {
       this.errorMessage.set(this.authService.getErrorMessage(error));
     } finally {

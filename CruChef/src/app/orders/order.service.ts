@@ -13,6 +13,12 @@ export interface CreateOrderPayload {
   quantity: number;
   notes: string;
   paymentMethod: string;
+  cardholderName?: string;
+  cardNumber?: string;
+  cardExpiry?: string;
+  cardCvv?: string;
+  transferBank?: string;
+  transferReference?: string;
 }
 
 export interface OrderRatingPayload {
@@ -88,6 +94,22 @@ export class OrderService {
   ): Promise<void> {
     this.ensureBrowser();
     const user = await this.authService.requireVerifiedUser();
+    const cardDigits = String(payload.cardNumber ?? '').replace(/\D/g, '');
+    const paymentDetails =
+      payload.paymentMethod === 'card'
+        ? {
+            type: 'card',
+            cardholderName: String(payload.cardholderName ?? '').trim(),
+            cardLast4: cardDigits.slice(-4),
+            cardExpiry: String(payload.cardExpiry ?? '').trim(),
+          }
+        : payload.paymentMethod === 'transfer'
+          ? {
+              type: 'transfer',
+              transferBank: String(payload.transferBank ?? '').trim(),
+              transferReference: String(payload.transferReference ?? '').trim(),
+            }
+          : null;
 
     await firstValueFrom(
       this.http.post(this.apiUrl, {
@@ -106,6 +128,7 @@ export class OrderService {
         serviceFee: 0,
         notes: payload.notes.trim(),
         paymentMethod: payload.paymentMethod,
+        paymentDetails,
       }),
     );
 
@@ -120,6 +143,14 @@ export class OrderService {
         status,
       }),
     );
+
+    this.refreshOrders$.next();
+  }
+
+  async confirmCashPayment(order: Order): Promise<void> {
+    this.ensureBrowser();
+
+    await firstValueFrom(this.http.patch(`${this.apiUrl}/${order.id}/payment`, {}));
 
     this.refreshOrders$.next();
   }
@@ -200,6 +231,7 @@ export class OrderService {
       totalPrice: Number(document['totalPrice'] ?? 0),
       notes: String(document['notes'] ?? ''),
       paymentMethod: String(document['paymentMethod'] ?? 'cash'),
+      paymentDetails: this.mapPaymentDetails(document['paymentDetails']),
       paymentStatus: String(document['paymentStatus'] ?? 'pending'),
       status: this.mapStatus(document['status']),
       createdAtMs: this.toMillis(document['createdAt']),
@@ -246,5 +278,19 @@ export class OrderService {
     }
 
     return this.toMillis(value);
+  }
+
+  private mapPaymentDetails(value: unknown): Record<string, string> | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    return Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>(
+      (details, [key, item]) => ({
+        ...details,
+        [key]: String(item ?? ''),
+      }),
+      {},
+    );
   }
 }

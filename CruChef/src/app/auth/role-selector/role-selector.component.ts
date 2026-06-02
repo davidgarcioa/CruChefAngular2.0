@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { OwnerService } from '../../dashboard/owner.service';
+import { isAdminEmail } from '../../admin/admin.config';
 import { AuthShellComponent } from '../auth-shell/auth-shell.component';
 import { AuthService } from '../auth.service';
 import { AppRole, RoleService } from '../role.service';
@@ -14,7 +15,7 @@ import { AppRole, RoleService } from '../role.service';
   templateUrl: './role-selector.component.html',
   styleUrl: './role-selector.component.css',
 })
-export class RoleSelectorComponent {
+export class RoleSelectorComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly roleService = inject(RoleService);
   private readonly authService = inject(AuthService);
@@ -22,6 +23,18 @@ export class RoleSelectorComponent {
 
   readonly isNavigating = signal(false);
   readonly errorMessage = signal('');
+
+  ngOnInit(): void {
+    void this.redirectAdmin();
+  }
+
+  private async redirectAdmin(): Promise<void> {
+    const user = await this.authService.getVerifiedUser();
+
+    if (isAdminEmail(user?.email)) {
+      await this.router.navigateByUrl('/admin/restaurants');
+    }
+  }
 
   async chooseRole(role: AppRole): Promise<void> {
     this.errorMessage.set('');

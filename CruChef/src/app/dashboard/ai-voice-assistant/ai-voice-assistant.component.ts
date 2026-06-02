@@ -95,7 +95,7 @@ export class AiVoiceAssistantComponent implements OnInit, OnDestroy {
       if (step === 'name') return 'Dime el nombre del plato.';
       if (step === 'price') return 'Dime el precio del plato en pesos.';
       if (step === 'category') return 'Elige una categoria por voz o desde las opciones.';
-      if (step === 'stock-item') return 'Selecciona un insumo para descontar al crear el plato.';
+      if (step === 'stock-item') return 'Selecciona un insumo para descontar cuando se pida el plato.';
       if (step === 'stock-quantity') return 'Dime la cantidad de ese insumo que usa cada plato.';
       return 'Confirma si quieres guardar este plato.';
     }

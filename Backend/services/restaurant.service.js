@@ -160,51 +160,6 @@ async function resolveDishStockRequirements(authUser, restaurantId, requirements
   return resolvedRequirements;
 }
 
-async function buildDishStockMovements(authUser, restaurantId, stockRequirements, transaction) {
-  const inventoryRefs = stockRequirements.map((requirement) =>
-    ownerInventoryCollection(authUser.uid, restaurantId).doc(requirement.itemId),
-  );
-  const inventorySnapshots = await Promise.all(
-    inventoryRefs.map((inventoryRef) => transaction.get(inventoryRef)),
-  );
-
-  const stockMovements = stockRequirements.map((requirement, index) => {
-    const inventorySnapshot = inventorySnapshots[index];
-
-    if (!inventorySnapshot.exists) {
-      throw new Error(`El insumo ${requirement.name || requirement.itemId} ya no existe en inventario.`);
-    }
-
-    const inventoryData = inventorySnapshot.data();
-    const currentQuantity = Number(inventoryData.quantity || 0);
-    const minimum = Number(inventoryData.minimum || 0);
-    const requiredQuantity = requirement.quantity;
-    const nextQuantity = Number((currentQuantity - requiredQuantity).toFixed(3));
-
-    if (nextQuantity < 0) {
-      throw new Error(
-        `Stock insuficiente para ${inventoryData.name || requirement.name}. Disponible: ${currentQuantity} ${inventoryData.unit || requirement.unit}.`,
-      );
-    }
-
-    return {
-      itemId: requirement.itemId,
-      name: typeof inventoryData.name === 'string' ? inventoryData.name : requirement.name,
-      unit: typeof inventoryData.unit === 'string' ? inventoryData.unit : requirement.unit,
-      quantityPerDish: requirement.quantity,
-      deductedQuantity: requiredQuantity,
-      quantityBefore: currentQuantity,
-      quantityAfter: nextQuantity,
-      minimum,
-    };
-  });
-
-  return {
-    inventoryRefs,
-    stockMovements,
-  };
-}
-
 async function loadRestaurant(ownerUid, restaurantId) {
   const snapshot = await ownerRestaurantDocument(ownerUid, restaurantId).get();
 
@@ -272,6 +227,62 @@ async function deleteOwnerRestaurant(authUser, restaurantId) {
   return true;
 }
 
+async function listAdminRestaurants() {
+  const snapshot = await db.collectionGroup('restaurants').get();
+
+  return snapshot.docs
+    .map((document) =>
+      mapRestaurant(
+        document,
+        document.ref.parent.parent ? document.ref.parent.parent.id : '',
+      ),
+    )
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function verifyAdminRestaurant(ownerUid, restaurantId) {
+  const documentRef = ownerRestaurantDocument(ownerUid, restaurantId);
+  const snapshot = await documentRef.get();
+
+  if (!snapshot.exists) {
+    return null;
+  }
+
+  await documentRef.update({
+    verificationStatus: 'verified',
+    verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const updatedSnapshot = await documentRef.get();
+  return mapRestaurant(updatedSnapshot, ownerUid);
+}
+
+async function listAdminRestaurantDishes(ownerUid, restaurantId) {
+  const restaurant = await loadRestaurant(ownerUid, restaurantId);
+
+  if (!restaurant) {
+    return null;
+  }
+
+  const snapshot = await ownerDishesCollection(ownerUid, restaurantId).orderBy('name').get();
+  return snapshot.docs.map((document) => mapDish(document, restaurantId));
+}
+
+async function deleteAdminRestaurant(ownerUid, restaurantId) {
+  const documentRef = ownerRestaurantDocument(ownerUid, restaurantId);
+  const snapshot = await documentRef.get();
+
+  if (!snapshot.exists) {
+    return false;
+  }
+
+  await deleteCollectionDocuments(ownerDishesCollection(ownerUid, restaurantId));
+  await deleteCollectionDocuments(ownerInventoryCollection(ownerUid, restaurantId));
+  await deleteCollectionDocuments(documentRef.collection('orders'));
+  await documentRef.delete();
+  return true;
+}
+
 async function listOwnerDishes(authUser, restaurantId) {
   const restaurant = await loadRestaurant(authUser.uid, restaurantId);
 
@@ -297,60 +308,27 @@ async function createOwnerDish(authUser, restaurantId, body = {}) {
     payload.stockRequirements,
   );
 
-  const documentRef = ownerDishesCollection(authUser.uid, restaurantId).doc();
-  const stockMovements = await db.runTransaction(async (transaction) => {
-    const movementResult = await buildDishStockMovements(
-      authUser,
-      restaurantId,
-      stockRequirements,
-      transaction,
-    );
-
-    movementResult.stockMovements.forEach((movement, index) => {
-      transaction.update(movementResult.inventoryRefs[index], {
-        quantity: movement.quantityAfter,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    });
-
-    transaction.create(documentRef, {
-      ...payload,
-      stockRequirements,
-      stockDeductedOnCreate: true,
-      stockMovementsOnCreate: movementResult.stockMovements,
-      rating: 0,
-      ratingCount: 0,
-      ratingTotal: 0,
-    });
-
-    return movementResult.stockMovements;
+  const documentRef = await ownerDishesCollection(authUser.uid, restaurantId).add({
+    ...payload,
+    stockRequirements,
+    rating: 0,
+    ratingCount: 0,
+    ratingTotal: 0,
   });
 
   const snapshot = await documentRef.get();
   const dish = mapDish(snapshot, restaurantId);
-  const restaurantContext = { id: restaurantId, ...restaurant };
 
   await createNotificationSafely({
     recipientUid: authUser.uid,
     audience: 'owner',
     type: 'dish-created',
     title: 'Plato creado',
-    message: `${dish.name} fue creado en ${restaurant.name} y se desconto inventario segun su receta.`,
+    message: `${dish.name} fue creado en ${restaurant.name}. El inventario se descontara cuando entren pedidos.`,
     restaurantId,
     restaurantName: restaurant.name,
     dishName: dish.name,
   });
-
-  await Promise.all(
-    stockMovements.map((movement) =>
-      notifyInventoryIfNeeded(authUser, restaurantContext, {
-        name: movement.name,
-        unit: movement.unit,
-        quantity: movement.quantityAfter,
-        minimum: movement.minimum,
-      }),
-    ),
-  );
 
   return dish;
 }
@@ -507,6 +485,10 @@ module.exports = {
   createOwnerRestaurant,
   updateOwnerRestaurant,
   deleteOwnerRestaurant,
+  listAdminRestaurants,
+  verifyAdminRestaurant,
+  listAdminRestaurantDishes,
+  deleteAdminRestaurant,
   listOwnerDishes,
   createOwnerDish,
   updateOwnerDish,

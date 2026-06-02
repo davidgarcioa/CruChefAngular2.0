@@ -74,6 +74,7 @@ export class DashboardComponent {
   readonly pendingDishDeletionId = signal<string | null>(null);
   readonly dishError = signal('');
   readonly dishSuccess = signal('');
+  readonly dishAttemptNotification = signal('');
   readonly ownerOrderError = signal('');
   readonly ownerOrderSuccess = signal('');
   readonly inventoryError = signal('');
@@ -469,23 +470,25 @@ export class DashboardComponent {
   async submitDish(): Promise<void> {
     if (this.dishForm.invalid) {
       this.dishForm.markAllAsTouched();
+      this.reportDishCreationFailure('No se pudo crear el plato. Revisa el nombre, precio y categoria.');
       return;
     }
 
     const restaurant = this.selectedRestaurant();
     if (!restaurant) {
-      this.dishError.set('Debes crear o seleccionar un restaurante primero.');
+      this.reportDishCreationFailure('Debes crear o seleccionar un restaurante primero.');
       return;
     }
 
     if (this.dishStockRequirements().length === 0) {
-      this.dishError.set('Agrega al menos un insumo requerido para descontar inventario.');
+      this.reportDishCreationFailure('Agrega al menos un insumo requerido para calcular el inventario por pedido.');
       return;
     }
 
     this.isSavingDish.set(true);
     this.dishError.set('');
     this.dishSuccess.set('');
+    this.dishAttemptNotification.set('');
 
     const payload = {
       ...this.dishForm.getRawValue(),
@@ -504,7 +507,7 @@ export class DashboardComponent {
 
       this.resetDishForm();
     } catch (error) {
-      this.dishError.set(this.ownerService.getErrorMessage(error));
+      this.reportDishCreationFailure(this.ownerService.getErrorMessage(error));
     } finally {
       this.isSavingDish.set(false);
     }
@@ -515,6 +518,7 @@ export class DashboardComponent {
     this.editingDishId.set(dish.id);
     this.dishError.set('');
     this.dishSuccess.set('');
+    this.dishAttemptNotification.set('');
     this.dishForm.setValue({
       name: dish.name,
       price: dish.price,
@@ -577,6 +581,8 @@ export class DashboardComponent {
 
   resetDishForm(): void {
     this.editingDishId.set(null);
+    this.dishError.set('');
+    this.dishAttemptNotification.set('');
     this.dishForm.reset({
       name: '',
       price: 24000,
@@ -587,6 +593,16 @@ export class DashboardComponent {
       itemId: '',
       quantity: 1,
     });
+  }
+
+  dismissDishAttemptNotification(): void {
+    this.dishAttemptNotification.set('');
+  }
+
+  private reportDishCreationFailure(message: string): void {
+    this.dishError.set(message);
+    this.dishSuccess.set('');
+    this.dishAttemptNotification.set(message);
   }
 
   editInventoryItem(item: InventoryItem): void {
@@ -704,6 +720,21 @@ export class DashboardComponent {
     await this.applyOrderStatusUpdate(order, 'cancelled');
   }
 
+  async confirmCashPayment(order: Order): Promise<void> {
+    this.updatingOrderId.set(order.id);
+    this.ownerOrderError.set('');
+    this.ownerOrderSuccess.set('');
+
+    try {
+      await this.orderService.confirmCashPayment(order);
+      this.ownerOrderSuccess.set(`Pago en efectivo confirmado para el pedido de ${order.customerName}.`);
+    } catch (error) {
+      this.ownerOrderError.set(this.orderService.getErrorMessage(error));
+    } finally {
+      this.updatingOrderId.set(null);
+    }
+  }
+
   private async applyOrderStatusUpdate(order: Order, status: OrderStatus): Promise<void> {
     this.updatingOrderId.set(order.id);
     this.ownerOrderError.set('');
@@ -740,8 +771,16 @@ export class DashboardComponent {
     }
   }
 
-  getPaymentStatusLabel(paymentStatus: string): string {
-    return paymentStatus === 'approved' ? 'Aprobado' : 'Pendiente';
+  getPaymentStatusLabel(paymentStatus: string, paymentMethod = ''): string {
+    if (paymentStatus !== 'approved') {
+      return 'Pendiente';
+    }
+
+    return paymentMethod === 'cash' ? 'Confirmado' : 'Aprobado';
+  }
+
+  shouldShowConfirmPayment(order: Order): boolean {
+    return order.paymentMethod === 'cash' && order.paymentStatus !== 'approved';
   }
 
   getNextStatuses(order: Order): OrderStatus[] {

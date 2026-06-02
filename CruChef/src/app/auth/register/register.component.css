@@ -74,6 +74,26 @@
   color: #ff9c9c;
 }
 
+.password-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.6rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.password-rules span {
+  color: #cfcfcf;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.password-rules span.is-valid {
+  color: #a7efc1;
+}
+
 .submit-button {
   margin-top: 0.35rem;
   border: 1px solid rgba(255, 75, 47, 0.24);

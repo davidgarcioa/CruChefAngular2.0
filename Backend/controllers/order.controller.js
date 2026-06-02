@@ -7,7 +7,10 @@ const validationMessages = new Set([
   'La cantidad debe estar entre 1 y 10.',
   'El precio unitario no es valido.',
   'El metodo de pago no es valido.',
+  'Los datos de tarjeta demo no son validos.',
+  'Los datos de transferencia demo no son validos.',
   'El estado de la orden no es valido.',
+  'Solo se puede confirmar pago en pedidos en efectivo.',
   'La calificacion debe estar entre 1 y 5.',
   'Solo se pueden calificar ordenes entregadas.',
   'La orden ya fue calificada.',
@@ -114,6 +117,21 @@ async function patchOrderStatus(req, res) {
   }
 }
 
+async function patchOrderPayment(req, res) {
+  try {
+    const updatedOrder = await orderService.confirmCashPayment(req.params.id);
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: 'La orden no existe.' });
+    }
+
+    return res.json(updatedOrder);
+  } catch (error) {
+    const resolved = normalizeControllerError(error, 'No se pudo confirmar el pago.');
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
 async function patchOrderRating(req, res) {
   try {
     const updatedOrder = await orderService.rateOrder(req.params.id, req.body);
@@ -133,5 +151,6 @@ module.exports = {
   getOrders,
   postOrder,
   patchOrderStatus,
+  patchOrderPayment,
   patchOrderRating,
 };

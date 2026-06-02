@@ -10,7 +10,7 @@ const validationMessages = new Set([
   'El archivo del RUT no es valido.',
   'El nombre del plato debe tener al menos 2 caracteres.',
   'El precio del plato debe ser mayor o igual a 1000.',
-  'Agrega al menos un insumo requerido para descontar inventario.',
+  'Agrega al menos un insumo requerido para calcular el inventario por pedido.',
   'La cantidad requerida del insumo no es valida.',
   'Selecciona insumos validos para la receta del plato.',
   'El nombre del insumo debe tener al menos 2 caracteres.',
@@ -106,6 +106,82 @@ async function deleteOwnerRestaurant(req, res) {
   try {
     const wasDeleted = await restaurantService.deleteOwnerRestaurant(
       req.authUser,
+      req.params.restaurantId,
+    );
+
+    if (!wasDeleted) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(
+      error,
+      'No se pudo eliminar el restaurante.',
+    );
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function getAdminRestaurants(req, res) {
+  try {
+    const restaurants = await restaurantService.listAdminRestaurants();
+    return res.json(restaurants);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(
+      error,
+      'No se pudieron cargar los restaurantes para administracion.',
+    );
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function verifyAdminRestaurant(req, res) {
+  try {
+    const restaurant = await restaurantService.verifyAdminRestaurant(
+      req.params.ownerUid,
+      req.params.restaurantId,
+    );
+
+    if (!restaurant) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    return res.json(restaurant);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(
+      error,
+      'No se pudo verificar el restaurante.',
+    );
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function getAdminRestaurantDishes(req, res) {
+  try {
+    const dishes = await restaurantService.listAdminRestaurantDishes(
+      req.params.ownerUid,
+      req.params.restaurantId,
+    );
+
+    if (dishes === null) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    return res.json(dishes);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(
+      error,
+      'No se pudieron cargar los platos del restaurante.',
+    );
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function deleteAdminRestaurant(req, res) {
+  try {
+    const wasDeleted = await restaurantService.deleteAdminRestaurant(
+      req.params.ownerUid,
       req.params.restaurantId,
     );
 
@@ -305,6 +381,10 @@ module.exports = {
   postOwnerRestaurant,
   putOwnerRestaurant,
   deleteOwnerRestaurant,
+  getAdminRestaurants,
+  verifyAdminRestaurant,
+  getAdminRestaurantDishes,
+  deleteAdminRestaurant,
   getOwnerDishes,
   postOwnerDish,
   putOwnerDish,

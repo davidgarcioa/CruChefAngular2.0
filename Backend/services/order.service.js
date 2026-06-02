@@ -85,6 +85,10 @@ function mapOrderSnapshot(document) {
   };
 }
 
+function roundStockQuantity(value) {
+  return Number(Number(value).toFixed(3));
+}
+
 async function notifyInventoryIfNeededSafely(ownerUid, order, item) {
   if (item.quantity > item.minimum) {
     return;
@@ -148,8 +152,8 @@ async function createOrder(body) {
       const inventoryData = inventorySnapshot.data();
       const currentQuantity = Number(inventoryData.quantity || 0);
       const minimum = Number(inventoryData.minimum || 0);
-      const requiredQuantity = requirement.quantity * payload.quantity;
-      const nextQuantity = Number((currentQuantity - requiredQuantity).toFixed(3));
+      const requiredQuantity = roundStockQuantity(requirement.quantity * payload.quantity);
+      const nextQuantity = roundStockQuantity(currentQuantity - requiredQuantity);
 
       if (nextQuantity < 0) {
         throw new Error(
@@ -263,6 +267,40 @@ async function updateOrderStatus(id, body) {
   return updatedOrder;
 }
 
+async function confirmCashPayment(id) {
+  const documentRef = db.collection('orders').doc(id);
+  const snapshot = await documentRef.get();
+
+  if (!snapshot.exists) {
+    return null;
+  }
+
+  const order = snapshot.data();
+
+  if (order.paymentMethod !== 'cash') {
+    throw new Error('Solo se puede confirmar pago en pedidos en efectivo.');
+  }
+
+  if (order.paymentStatus === 'approved') {
+    return {
+      id: snapshot.id,
+      ...order,
+    };
+  }
+
+  await documentRef.update({
+    paymentStatus: 'approved',
+    paidAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const updatedSnapshot = await documentRef.get();
+  return {
+    id: updatedSnapshot.id,
+    ...updatedSnapshot.data(),
+  };
+}
+
 async function rateOrder(id, body) {
   const documentRef = db.collection('orders').doc(id);
   const snapshot = await documentRef.get();
@@ -313,5 +351,6 @@ module.exports = {
   listOrders,
   createOrder,
   updateOrderStatus,
+  confirmCashPayment,
   rateOrder,
 };

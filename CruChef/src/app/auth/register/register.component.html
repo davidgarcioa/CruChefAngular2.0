@@ -65,12 +65,19 @@
 
       <label class="field">
         <span>Contrase&ntilde;a</span>
-        <input type="password" formControlName="password" placeholder="M&iacute;nimo 6 caracteres" />
+        <input type="password" formControlName="password" placeholder="Minimo 8 caracteres, numero y simbolo" />
+        <div class="password-rules" aria-live="polite">
+          @for (rule of passwordRules(); track rule.label) {
+            <span [class.is-valid]="rule.valid">
+              {{ rule.valid ? 'OK' : '-' }} {{ rule.label }}
+            </span>
+          }
+        </div>
         @if (form.controls.password.touched && form.controls.password.invalid) {
           @if (form.controls.password.hasError('required')) {
             <small>La contrase&ntilde;a es obligatoria.</small>
-          } @else if (form.controls.password.hasError('minlength')) {
-            <small>La contrase&ntilde;a debe tener al menos 6 caracteres.</small>
+          } @else if (form.controls.password.hasError('strongPassword')) {
+            <small>La contrase&ntilde;a debe cumplir todos los parametros de seguridad.</small>
           } @else if (form.controls.password.hasError('maxlength')) {
             <small>La contrase&ntilde;a no puede superar 64 caracteres.</small>
           }

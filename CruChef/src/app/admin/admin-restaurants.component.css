@@ -1,0 +1,426 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 82% 6%, var(--owner-glow), transparent 28rem),
+    radial-gradient(circle at 34% 24%, rgba(245, 185, 66, 0.14), transparent 22rem),
+    radial-gradient(circle at 80% 92%, rgba(245, 185, 66, 0.1), transparent 24rem),
+    var(--bg);
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 224px) minmax(0, 1fr);
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.content-shell {
+  min-width: 0;
+  padding: 1.35rem 1.6rem 2rem;
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.content-header,
+.section-heading,
+.restaurant-card__top,
+.dashboard-hero,
+.top-dish-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.content-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-copy h1,
+.section-heading h2,
+.empty-card h3,
+.restaurant-card h3,
+.dashboard-hero h2,
+.stat-card h3,
+.top-dish-item h3 {
+  margin: 0;
+}
+
+.header-copy h1 {
+  font-size: clamp(1.7rem, 2.4vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.section-heading h2 {
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  line-height: 1.15;
+}
+
+.eyebrow {
+  margin: 0 0 0.32rem;
+  color: var(--muted-2);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.section-block {
+  margin-top: 1.25rem;
+}
+
+.section-heading {
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.section-heading--stacked {
+  align-items: flex-start;
+}
+
+.section-heading p,
+.empty-card p,
+.restaurant-card p,
+.dashboard-hero p,
+.stat-card p,
+.top-dish-item p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.section-heading p span,
+.stat-card h3,
+.top-dish-item strong {
+  color: var(--gold) !important;
+  font-weight: 700;
+}
+
+.owner-layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.36fr) minmax(0, 0.64fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.owner-side,
+.restaurant-list,
+.admin-detail-panel,
+.admin-dish-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.dashboard-hero,
+.dashboard-panel,
+.stat-card,
+.restaurants-panel,
+.empty-card,
+.restaurant-card,
+.top-dish-item,
+.role-entry-panel,
+.admin-detail-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-card), var(--glass-inset);
+}
+
+.dashboard-hero,
+.dashboard-panel,
+.stat-card,
+.restaurants-panel,
+.empty-card,
+.role-entry-panel,
+.admin-detail-panel {
+  padding: 1rem;
+}
+
+.role-entry-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background:
+    linear-gradient(135deg, rgba(77, 59, 27, 0.56), rgba(22, 22, 24, 0.96)),
+    rgba(22, 22, 24, 0.96);
+  backdrop-filter: none;
+}
+
+.role-entry-panel h2,
+.role-entry-panel p {
+  margin: 0;
+}
+
+.role-entry-panel p:not(.eyebrow) {
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+
+.role-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.restaurants-panel,
+.admin-detail-panel {
+  position: relative;
+  isolation: isolate;
+  contain: paint;
+  overflow: hidden;
+  background: rgba(22, 22, 24, 0.96);
+  backdrop-filter: none;
+}
+
+.restaurant-card,
+.top-dish-item {
+  background: #242426;
+  backdrop-filter: none;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2), var(--glass-inset);
+}
+
+.restaurant-card {
+  padding: 0.85rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.restaurant-card:hover {
+  border-color: var(--border-strong);
+}
+
+.restaurant-card.is-selected {
+  border-color: rgba(245, 185, 66, 0.45);
+  background: linear-gradient(135deg, #4d3b1b, #493719);
+  box-shadow: inset 0 0 0 1px rgba(245, 185, 66, 0.18);
+}
+
+.verification-pill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.verification-pill--pending {
+  background: rgba(255, 75, 47, 0.12);
+  color: #ff9b8b;
+}
+
+.verification-pill--verified {
+  background: rgba(82, 196, 131, 0.14);
+  color: #a7efc1;
+}
+
+.stat-card h3 {
+  margin-top: 0.35rem;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  line-height: 1;
+}
+
+.admin-hero {
+  align-items: flex-start;
+}
+
+.admin-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.details-grid div {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(36, 36, 38, 0.58);
+}
+
+.details-grid dt {
+  color: var(--muted-2);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.details-grid dd {
+  margin: 0.25rem 0 0;
+  color: var(--text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.top-dish-item {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 0.75rem;
+}
+
+.top-dish-item img {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: rgba(44, 44, 46, 0.58);
+}
+
+.recipe-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.recipe-inline span:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.status-message {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+}
+
+.status-message--success {
+  background: rgba(82, 196, 131, 0.12);
+  color: #a7efc1;
+}
+
+.status-message--error {
+  background: rgba(255, 75, 47, 0.12);
+  color: #ff9b8b;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 0.72rem 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 244, 207, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.primary-button:hover,
+.secondary-button:hover {
+  border-color: rgba(245, 185, 66, 0.54);
+  background: rgba(77, 59, 27, 0.92);
+  color: #fff8df;
+}
+
+.danger-button {
+  border-color: rgba(220, 93, 80, 0.28);
+  background: rgba(220, 93, 80, 0.05);
+  color: #ffd0ca;
+}
+
+.danger-button:hover {
+  border-color: rgba(220, 93, 80, 0.55);
+  background: rgba(62, 32, 28, 0.92);
+  color: #fff0ed;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.fade-slide {
+  animation: fadeSlide 320ms ease both;
+}
+
+.delay-1 {
+  animation-delay: 80ms;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .owner-layout,
+  .dashboard-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-shell {
+    padding: 1rem;
+  }
+
+  .content-header,
+  .role-entry-panel,
+  .section-heading,
+  .restaurant-card__top,
+  .dashboard-hero {
+    display: grid;
+  }
+
+  .details-grid,
+  .top-dish-item {
+    grid-template-columns: 1fr;
+  }
+
+  .refresh-button,
+  .role-entry-actions,
+  .role-entry-actions button,
+  .admin-action-row button {
+    width: 100%;
+  }
+}

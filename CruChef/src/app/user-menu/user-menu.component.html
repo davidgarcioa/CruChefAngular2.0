@@ -176,7 +176,7 @@
               <section class="checkout-panel">
                 <p class="eyebrow">Metodo de pago</p>
                 <div class="payment-options">
-                  <label class="payment-option">
+                  <label class="payment-option" (click)="selectPaymentMethod('cash')">
                     <input type="radio" formControlName="paymentMethod" value="cash" />
                     <span class="material-symbols-outlined" aria-hidden="true">payments</span>
                     <span class="payment-option__copy">
@@ -185,7 +185,7 @@
                     </span>
                   </label>
 
-                  <label class="payment-option">
+                  <label class="payment-option" (click)="selectPaymentMethod('card')">
                     <input type="radio" formControlName="paymentMethod" value="card" />
                     <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
                     <span class="payment-option__copy">
@@ -194,7 +194,7 @@
                     </span>
                   </label>
 
-                  <label class="payment-option">
+                  <label class="payment-option" (click)="selectPaymentMethod('transfer')">
                     <input type="radio" formControlName="paymentMethod" value="transfer" />
                     <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
                     <span class="payment-option__copy">
@@ -203,6 +203,104 @@
                     </span>
                   </label>
                 </div>
+
+                @if (selectedPaymentMethod() === 'card') {
+                  <section class="payment-simulation">
+                    <div class="simulation-heading">
+                      <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
+                      <div>
+                        <strong>Datos de tarjeta</strong>
+                        <small>Estos datos son solo de prueba y no se cobran.</small>
+                      </div>
+                    </div>
+
+                    <label class="field">
+                      <span>Titular</span>
+                      <input type="text" formControlName="cardholderName" placeholder="Nombre del titular" />
+                      @if (orderForm.controls.cardholderName.touched && orderForm.controls.cardholderName.value.trim().length < 3) {
+                        <small>Escribe el nombre del titular.</small>
+                      }
+                    </label>
+
+                    <label class="field">
+                      <span>Numero de tarjeta</span>
+                      <input
+                        type="text"
+                        formControlName="cardNumber"
+                        inputmode="numeric"
+                        maxlength="23"
+                        placeholder="4242 4242 4242 4242"
+                        (input)="formatCardNumber($event)"
+                      />
+                      @if (orderForm.controls.cardNumber.touched && onlyDigits(orderForm.controls.cardNumber.value).length < 12) {
+                        <small>Escribe un numero de tarjeta demo.</small>
+                      }
+                    </label>
+
+                    <div class="simulation-grid">
+                      <label class="field">
+                        <span>Vence</span>
+                        <input
+                          type="text"
+                          formControlName="cardExpiry"
+                          inputmode="numeric"
+                          maxlength="5"
+                          placeholder="MM/AA"
+                          (input)="formatCardExpiry($event)"
+                        />
+                        @if (orderForm.controls.cardExpiry.touched && !isCardExpiryValid(orderForm.controls.cardExpiry.value)) {
+                          <small>Usa una fecha vigente en formato MM/AA.</small>
+                        }
+                      </label>
+
+                      <label class="field">
+                        <span>CVV</span>
+                        <input
+                          type="password"
+                          formControlName="cardCvv"
+                          inputmode="numeric"
+                          maxlength="4"
+                          placeholder="123"
+                          (input)="formatCardCvv($event)"
+                        />
+                        @if (orderForm.controls.cardCvv.touched && !isCardCvvValid(orderForm.controls.cardCvv.value)) {
+                          <small>CVV de 3 o 4 numeros.</small>
+                        }
+                      </label>
+                    </div>
+                  </section>
+                } @else if (selectedPaymentMethod() === 'transfer') {
+                  <section class="payment-simulation">
+                    <div class="simulation-heading">
+                      <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+                      <div>
+                        <strong>Datos de transferencia</strong>
+                        <small>Registra una referencia demo para completar el pedido.</small>
+                      </div>
+                    </div>
+
+                    <label class="field">
+                      <span>Banco</span>
+                      <input type="text" formControlName="transferBank" placeholder="Ej. Bancolombia" />
+                      @if (orderForm.controls.transferBank.touched && orderForm.controls.transferBank.value.trim().length < 2) {
+                        <small>Escribe el banco de la transferencia.</small>
+                      }
+                    </label>
+
+                    <label class="field">
+                      <span>Referencia</span>
+                      <input type="text" formControlName="transferReference" placeholder="TRX-123456" />
+                      @if (orderForm.controls.transferReference.touched && orderForm.controls.transferReference.value.trim().length < 4) {
+                        <small>Escribe la referencia de pago.</small>
+                      }
+                    </label>
+
+                    <div class="simulation-receipt">
+                      <span>Cuenta demo</span>
+                      <strong>000 123 456 789</strong>
+                    </div>
+                  </section>
+                }
               </section>
 
               <label class="field">
