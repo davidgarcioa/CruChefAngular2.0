@@ -2,5 +2,11 @@
   "framework": "angular",
   "installCommand": "npm install",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/CruChef/browser"
+  "outputDirectory": "dist/CruChef/browser",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.csr.html"
+    }
+  ]
 }

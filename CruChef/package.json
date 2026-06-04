@@ -6,6 +6,7 @@
     "start": "ng serve",
     "prebuild": "node scripts/write-env.mjs",
     "build": "ng build",
+    "postbuild": "node scripts/copy-index.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:CruChef": "node dist/CruChef/server/server.mjs"
