@@ -26,6 +26,10 @@ app.use('/api', restaurantRoutes);
 app.use('/api', publicRoutes);
 app.use('/api', notificationRoutes);
 
-app.listen(port, () => {
-  console.log(`Servidor corriendo en el puerto ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Servidor corriendo en el puerto ${port}`);
+  });
+}
+
+module.exports = app;

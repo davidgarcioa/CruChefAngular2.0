@@ -69,10 +69,29 @@ Importa el proyecto desde GitHub y usa:
 Variables de entorno en Vercel:
 
 ```env
-CRUCHEF_API_BASE_URL=https://TU_BACKEND_NODE/api
-CRUCHEF_VOICE_BACKEND_URL=https://TU_BACKEND_VOZ
+CRUCHEF_API_BASE_URL=https://cruchef-backend.vercel.app/api
+CRUCHEF_VOICE_BACKEND_URL=https://cruchef-backend.vercel.app/voice
 CRUCHEF_ADMIN_EMAILS=davidgarciaparada2020@gmail.com
 ```
+
+## 4.1 Backend alternativo en Vercel
+
+Si Render no esta conectado, el backend tambien puede desplegarse en Vercel:
+
+- Project: `cruchef-backend`
+- Root Directory: `Backend`
+- Node API: `https://cruchef-backend.vercel.app/api`
+- Voice API: `https://cruchef-backend.vercel.app/voice`
+
+Variables de entorno del backend en Vercel:
+
+```env
+FIREBASE_SERVICE_ACCOUNT_BASE64={firebase-key.json_en_base64}
+ADMIN_EMAILS=davidgarciaparada2020@gmail.com
+NODE_ENV=production
+```
+
+En modo serverless no se instala `faster-whisper`; el navegador usa Web Speech para transcribir y el backend procesa el texto con DeepSeek si esta configurado, o con parser local si no hay API key.
 
 Opcionalmente puedes definir las variables públicas de Firebase si cambias de proyecto:
 
