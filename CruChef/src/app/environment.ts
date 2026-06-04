@@ -2,6 +2,9 @@ export const environment = {
   "production": false,
   "apiBaseUrl": "http://localhost:3000/api",
   "voiceBackendUrl": "http://localhost:8000",
+  "adminEmails": [
+    "davidgarciaparada2020@gmail.com"
+  ],
   "firebaseConfig": {
     "apiKey": "AIzaSyDyURnZJ6DEFHW04R8lJvDIY9drPK8is6c",
     "authDomain": "cruchefangular.firebaseapp.com",

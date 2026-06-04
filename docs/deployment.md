@@ -71,6 +71,7 @@ Variables de entorno en Vercel:
 ```env
 CRUCHEF_API_BASE_URL=https://TU_BACKEND_NODE/api
 CRUCHEF_VOICE_BACKEND_URL=https://TU_BACKEND_VOZ
+CRUCHEF_ADMIN_EMAILS=davidgarciaparada2020@gmail.com
 ```
 
 Opcionalmente puedes definir las variables públicas de Firebase si cambias de proyecto:
