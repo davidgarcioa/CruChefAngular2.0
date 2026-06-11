@@ -46,6 +46,8 @@ export class RegisterComponent {
   private readonly authService = inject(AuthService);
 
   readonly isSubmitting = signal(false);
+  readonly showPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
   readonly errorMessage = signal('');
   readonly warningMessage = signal('');
 
@@ -80,6 +82,7 @@ export class RegisterComponent {
           Validators.pattern(formPatterns.digitsOnly),
         ],
       ],
+      accountType: ['both', Validators.required],
       password: [
         '',
         [
@@ -93,6 +96,14 @@ export class RegisterComponent {
     { validators: passwordMatchValidator },
   );
 
+  togglePasswordVisibility(): void {
+    this.showPassword.update((isVisible) => !isVisible);
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update((isVisible) => !isVisible);
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -104,12 +115,20 @@ export class RegisterComponent {
     this.isSubmitting.set(true);
 
     try {
-      const { fullName, email, documentNumber, password } = this.form.getRawValue();
+      const { fullName, email, documentNumber, accountType, password } =
+        this.form.getRawValue();
+      const allowedRoles =
+        accountType === 'user'
+          ? (['user'] as const)
+          : accountType === 'owner'
+            ? (['owner'] as const)
+            : (['user', 'owner'] as const);
       const result = await this.authService.register({
         fullName: normalizeTextInput(fullName),
         email: normalizeEmailInput(email),
         documentNumber: documentNumber.trim(),
         password,
+        allowedRoles: [...allowedRoles],
       });
 
       if (!result.profileSaved) {

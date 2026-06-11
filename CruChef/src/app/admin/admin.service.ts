@@ -8,6 +8,13 @@ import { Dish, DishStockRequirement } from '../models/dish.model';
 import { Restaurant } from '../models/restaurant.model';
 import { getCategoryImageKey, getDishImageUrl } from '../dashboard/dashboard.data';
 
+export interface RestaurantRutDocument {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  fileData: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -29,6 +36,16 @@ export class AdminService {
       this.http.put(
         `${this.restaurantsUrl}/${encodeURIComponent(restaurant.ownerUid)}/${encodeURIComponent(restaurant.id)}/verify`,
         {},
+        { headers },
+      ),
+    );
+  }
+
+  async getRestaurantRut(restaurant: Restaurant): Promise<RestaurantRutDocument> {
+    const headers = await this.authService.getAuthHeaders();
+    return firstValueFrom(
+      this.http.get<RestaurantRutDocument>(
+        `${this.restaurantsUrl}/${encodeURIComponent(restaurant.ownerUid)}/${encodeURIComponent(restaurant.id)}/rut`,
         { headers },
       ),
     );

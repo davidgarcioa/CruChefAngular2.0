@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+  getProfile,
   postRegisterProfile,
   postLoginProfile,
   postSelectedRole,
@@ -9,6 +10,7 @@ const { requireAuth } = require('../middleware/require-auth');
 
 const router = express.Router();
 
+router.get('/users/profile', requireFirestore, requireAuth, getProfile);
 router.post('/users/profile/register', requireFirestore, requireAuth, postRegisterProfile);
 router.post('/users/profile/login', requireFirestore, requireAuth, postLoginProfile);
 router.post('/users/role', requireFirestore, requireAuth, postSelectedRole);

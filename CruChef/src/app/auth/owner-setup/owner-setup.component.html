@@ -117,16 +117,18 @@
         <span>Archivo del RUT</span>
         <input
           type="file"
-          accept=".pdf,image/*"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
           (change)="handleRutFileChange($event)"
         />
         <strong>
           <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
           {{ rutFileName() || 'Cargar PDF o imagen' }}
         </strong>
-        <small>Maximo 1.5 MB. Se guarda como soporte legal del registro.</small>
-        @if (restaurantForm.controls.rutFileData.touched && restaurantForm.controls.rutFileData.invalid) {
-          <small>El archivo del RUT es obligatorio.</small>
+        <small>PDF, JPG, PNG o WEBP. Maximo 700 KB.</small>
+        @if (rutFileError()) {
+          <small class="file-error">{{ rutFileError() }}</small>
+        } @else if (restaurantForm.controls.rutFileData.touched && restaurantForm.controls.rutFileData.invalid) {
+          <small class="file-error">El archivo del RUT es obligatorio.</small>
         }
       </label>
 

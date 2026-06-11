@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { User } from 'firebase/auth';
 
 import { AuthService } from '../auth/auth.service';
+import { RoleService } from '../auth/role.service';
 import { SidebarComponent } from '../dashboard/sidebar/sidebar.component';
 import { ownerNavigationItems, userNavigationItems } from '../dashboard/dashboard.data';
 
@@ -21,6 +22,7 @@ export class SettingsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly roleService = inject(RoleService);
 
   readonly role = signal<SettingsRole>(
     (this.route.snapshot.data['role'] as SettingsRole | undefined) ?? 'user',
@@ -29,7 +31,10 @@ export class SettingsComponent {
 
   readonly isOwner = computed(() => this.role() === 'owner');
   readonly navigationItems = computed(() =>
-    this.isOwner() ? ownerNavigationItems : userNavigationItems,
+    (this.isOwner() ? ownerNavigationItems : userNavigationItems).filter(
+      (item) =>
+        item.route !== '/select-role' || this.roleService.allowedRoles().length > 1,
+    ),
   );
   readonly settingsRoute = computed(() =>
     this.isOwner() ? '/owner/settings' : '/user/settings',

@@ -5,6 +5,7 @@ const {
   putOwnerRestaurant,
   deleteOwnerRestaurant,
   getAdminRestaurants,
+  getAdminRestaurantRut,
   verifyAdminRestaurant,
   getAdminRestaurantDishes,
   deleteAdminRestaurant,
@@ -24,6 +25,13 @@ const { requireAdmin } = require('../middleware/require-admin');
 const router = express.Router();
 
 router.get('/admin/restaurants', requireFirestore, requireAuth, requireAdmin, getAdminRestaurants);
+router.get(
+  '/admin/restaurants/:ownerUid/:restaurantId/rut',
+  requireFirestore,
+  requireAuth,
+  requireAdmin,
+  getAdminRestaurantRut,
+);
 router.put(
   '/admin/restaurants/:ownerUid/:restaurantId/verify',
   requireFirestore,

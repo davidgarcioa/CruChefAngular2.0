@@ -199,6 +199,11 @@
   color: rgba(232, 214, 176, 0.82);
 }
 
+.rut-file-field small.file-error {
+  color: #ff9c9c;
+  font-weight: 700;
+}
+
 .rut-file-field .material-symbols-outlined {
   font-size: 1.35rem;
 }

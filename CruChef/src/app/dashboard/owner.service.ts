@@ -260,6 +260,10 @@ export class OwnerService {
         return message || 'Los datos enviados no son validos.';
       }
 
+      if (error.status === 413) {
+        return message || 'El archivo del RUT es demasiado grande. El tamaño maximo es 700 KB.';
+      }
+
       if (error.status === 401) {
         return message || 'Tu sesion ya no es valida. Inicia sesion de nuevo.';
       }

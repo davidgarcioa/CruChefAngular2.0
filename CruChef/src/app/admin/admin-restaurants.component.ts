@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../auth/auth.service';
@@ -9,7 +10,7 @@ import { OwnerService } from '../dashboard/owner.service';
 import { SidebarComponent } from '../dashboard/sidebar/sidebar.component';
 import { Dish } from '../models/dish.model';
 import { Restaurant } from '../models/restaurant.model';
-import { AdminService } from './admin.service';
+import { AdminService, RestaurantRutDocument } from './admin.service';
 
 @Component({
   selector: 'app-admin-restaurants',
@@ -18,12 +19,13 @@ import { AdminService } from './admin.service';
   templateUrl: './admin-restaurants.component.html',
   styleUrl: './admin-restaurants.component.css',
 })
-export class AdminRestaurantsComponent implements OnInit {
+export class AdminRestaurantsComponent implements OnInit, OnDestroy {
   private readonly adminService = inject(AdminService);
   private readonly authService = inject(AuthService);
   private readonly ownerService = inject(OwnerService);
   private readonly roleService = inject(RoleService);
   private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly restaurants = signal<Restaurant[]>([]);
   readonly dishes = signal<Dish[]>([]);
@@ -34,6 +36,11 @@ export class AdminRestaurantsComponent implements OnInit {
   readonly errorMessage = signal('');
   readonly dishErrorMessage = signal('');
   readonly successMessage = signal('');
+  readonly isLoadingRut = signal(false);
+  readonly rutErrorMessage = signal('');
+  readonly rutDocument = signal<RestaurantRutDocument | null>(null);
+  readonly rutObjectUrl = signal('');
+  readonly rutPreviewUrl = signal<SafeResourceUrl | null>(null);
   readonly navigatingRole = signal<AppRole | null>(null);
   readonly navigationItems: NavigationItem[] = [
     { label: 'Admin', route: '/admin/restaurants', icon: 'admin_panel_settings' },
@@ -73,6 +80,10 @@ export class AdminRestaurantsComponent implements OnInit {
     void this.loadRestaurants();
   }
 
+  ngOnDestroy(): void {
+    this.clearRutDocument();
+  }
+
   async loadRestaurants(): Promise<void> {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -100,7 +111,42 @@ export class AdminRestaurantsComponent implements OnInit {
 
   async selectRestaurant(restaurant: Restaurant): Promise<void> {
     this.selectedRestaurantId.set(this.getRestaurantKey(restaurant));
+    this.clearRutDocument();
     await this.loadSelectedRestaurantDishes();
+  }
+
+  async loadRutDocument(restaurant: Restaurant): Promise<void> {
+    this.clearRutDocument();
+    this.isLoadingRut.set(true);
+    this.rutErrorMessage.set('');
+
+    try {
+      const document = await this.adminService.getRestaurantRut(restaurant);
+      const blob = this.dataUrlToBlob(document.fileData, document.fileType);
+      const objectUrl = URL.createObjectURL(blob);
+
+      this.rutDocument.set(document);
+      this.rutObjectUrl.set(objectUrl);
+      this.rutPreviewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
+    } catch (error) {
+      this.rutErrorMessage.set(this.adminService.getErrorMessage(error));
+    } finally {
+      this.isLoadingRut.set(false);
+    }
+  }
+
+  formatFileSize(size: number | undefined): string {
+    if (!size || size <= 0) {
+      return 'Tamaño no disponible';
+    }
+
+    return size < 1024
+      ? `${size} bytes`
+      : `${(size / 1024).toFixed(size < 102_400 ? 1 : 0)} KB`;
+  }
+
+  isRutImage(): boolean {
+    return this.rutDocument()?.fileType.startsWith('image/') ?? false;
   }
 
   async loadSelectedRestaurantDishes(): Promise<void> {
@@ -182,6 +228,38 @@ export class AdminRestaurantsComponent implements OnInit {
 
   getRestaurantKey(restaurant: Restaurant): string {
     return `${restaurant.ownerUid}:${restaurant.id}`;
+  }
+
+  private clearRutDocument(): void {
+    const objectUrl = this.rutObjectUrl();
+
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+    }
+
+    this.rutDocument.set(null);
+    this.rutObjectUrl.set('');
+    this.rutPreviewUrl.set(null);
+    this.rutErrorMessage.set('');
+  }
+
+  private dataUrlToBlob(dataUrl: string, fallbackType: string): Blob {
+    const separatorIndex = dataUrl.indexOf(',');
+
+    if (!dataUrl.startsWith('data:') || separatorIndex < 0) {
+      throw new Error('El documento del RUT guardado no es valido.');
+    }
+
+    const metadata = dataUrl.slice(5, separatorIndex);
+    const contentType = metadata.split(';')[0] || fallbackType || 'application/octet-stream';
+    const binary = atob(dataUrl.slice(separatorIndex + 1));
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return new Blob([bytes], { type: contentType });
   }
 
   private async enterWithRole(role: AppRole): Promise<void> {

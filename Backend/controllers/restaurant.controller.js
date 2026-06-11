@@ -8,6 +8,9 @@ const validationMessages = new Set([
   'El horario del restaurante debe tener al menos 3 caracteres.',
   'Carga el archivo del RUT del restaurante.',
   'El archivo del RUT no es valido.',
+  'El archivo del RUT supera el limite de 700 KB.',
+  'El archivo del RUT debe ser PDF, JPG, PNG o WEBP.',
+  'El contenido del archivo del RUT no coincide con su formato.',
   'El nombre del plato debe tener al menos 2 caracteres.',
   'El precio del plato debe ser mayor o igual a 1000.',
   'Agrega al menos un insumo requerido para calcular el inventario por pedido.',
@@ -131,6 +134,33 @@ async function getAdminRestaurants(req, res) {
     const resolved = resolveRestaurantControllerError(
       error,
       'No se pudieron cargar los restaurantes para administracion.',
+    );
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
+}
+
+async function getAdminRestaurantRut(req, res) {
+  try {
+    const document = await restaurantService.getAdminRestaurantRut(
+      req.params.ownerUid,
+      req.params.restaurantId,
+    );
+
+    if (!document) {
+      return res.status(404).json({ message: 'El restaurante no existe.' });
+    }
+
+    if (!document.fileData) {
+      return res.status(404).json({
+        message: 'Este restaurante no tiene un documento del RUT disponible.',
+      });
+    }
+
+    return res.json(document);
+  } catch (error) {
+    const resolved = resolveRestaurantControllerError(
+      error,
+      'No se pudo cargar el documento del RUT.',
     );
     return res.status(resolved.status).json({ message: resolved.message });
   }
@@ -382,6 +412,7 @@ module.exports = {
   putOwnerRestaurant,
   deleteOwnerRestaurant,
   getAdminRestaurants,
+  getAdminRestaurantRut,
   verifyAdminRestaurant,
   getAdminRestaurantDishes,
   deleteAdminRestaurant,

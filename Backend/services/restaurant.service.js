@@ -240,6 +240,22 @@ async function listAdminRestaurants() {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
+async function getAdminRestaurantRut(ownerUid, restaurantId) {
+  const snapshot = await ownerRestaurantDocument(ownerUid, restaurantId).get();
+
+  if (!snapshot.exists) {
+    return null;
+  }
+
+  const data = snapshot.data();
+  return {
+    fileName: typeof data.rutFileName === 'string' ? data.rutFileName : '',
+    fileType: typeof data.rutFileType === 'string' ? data.rutFileType : '',
+    fileSize: Number(data.rutFileSize || 0),
+    fileData: typeof data.rutFileData === 'string' ? data.rutFileData : '',
+  };
+}
+
 async function verifyAdminRestaurant(ownerUid, restaurantId) {
   const documentRef = ownerRestaurantDocument(ownerUid, restaurantId);
   const snapshot = await documentRef.get();
@@ -486,6 +502,7 @@ module.exports = {
   updateOwnerRestaurant,
   deleteOwnerRestaurant,
   listAdminRestaurants,
+  getAdminRestaurantRut,
   verifyAdminRestaurant,
   listAdminRestaurantDishes,
   deleteAdminRestaurant,

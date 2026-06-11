@@ -1,7 +1,7 @@
 ﻿<app-auth-shell
   eyebrow="Crea tu cuenta"
   title="Registro"
-  subtitle="Completa tus datos para crear acceso al panel administrativo de CruChef."
+  subtitle="Completa tus datos y elige si usaras CruChef como usuario, propietario o con ambos perfiles."
   alternateText="Ya tienes cuenta?"
   alternateLabel="Inicia sesi&oacute;n"
   alternateRoute="/login"
@@ -63,9 +63,55 @@
         }
       </label>
 
+      <fieldset class="account-type-field">
+        <legend>&iquest;Para qu&eacute; usar&aacute;s CruChef?</legend>
+        <p>Esta elecci&oacute;n define las ventanas y herramientas disponibles para tu cuenta.</p>
+
+        <div class="account-type-grid">
+          <label [class.is-selected]="form.controls.accountType.value === 'user'">
+            <input type="radio" formControlName="accountType" value="user" />
+            <span class="material-symbols-outlined" aria-hidden="true">person</span>
+            <strong>Usuario</strong>
+            <small>Explorar men&uacute;s y realizar pedidos.</small>
+          </label>
+
+          <label [class.is-selected]="form.controls.accountType.value === 'owner'">
+            <input type="radio" formControlName="accountType" value="owner" />
+            <span class="material-symbols-outlined" aria-hidden="true">storefront</span>
+            <strong>Propietario</strong>
+            <small>Crear restaurantes, platos e inventario.</small>
+          </label>
+
+          <label [class.is-selected]="form.controls.accountType.value === 'both'">
+            <input type="radio" formControlName="accountType" value="both" />
+            <span class="material-symbols-outlined" aria-hidden="true">switch_account</span>
+            <strong>Ambos</strong>
+            <small>Acceder a las herramientas de usuario y propietario.</small>
+          </label>
+        </div>
+      </fieldset>
+
       <label class="field">
         <span>Contrase&ntilde;a</span>
-        <input type="password" formControlName="password" placeholder="Minimo 8 caracteres, numero y simbolo" />
+        <div class="password-input">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Minimo 8 caracteres, numero y simbolo"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePasswordVisibility()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              {{ showPassword() ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
         <div class="password-rules" aria-live="polite">
           @for (rule of passwordRules(); track rule.label) {
             <span [class.is-valid]="rule.valid">
@@ -86,7 +132,25 @@
 
       <label class="field">
         <span>Confirmar contrase&ntilde;a</span>
-        <input type="password" formControlName="confirmPassword" placeholder="Repite tu contrase&ntilde;a" />
+        <div class="password-input">
+          <input
+            [type]="showConfirmPassword() ? 'text' : 'password'"
+            formControlName="confirmPassword"
+            placeholder="Repite tu contrase&ntilde;a"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            [attr.aria-label]="showConfirmPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="showConfirmPassword()"
+            (click)="toggleConfirmPasswordVisibility()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              {{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
         @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.invalid) {
           @if (form.controls.confirmPassword.hasError('required')) {
             <small>Confirma tu contrase&ntilde;a.</small>

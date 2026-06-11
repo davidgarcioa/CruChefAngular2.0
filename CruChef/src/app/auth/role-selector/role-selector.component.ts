@@ -22,21 +22,47 @@ export class RoleSelectorComponent implements OnInit {
   private readonly ownerService = inject(OwnerService);
 
   readonly isNavigating = signal(false);
+  readonly isLoadingRoles = signal(true);
+  readonly allowedRoles = signal<AppRole[]>([]);
   readonly errorMessage = signal('');
 
   ngOnInit(): void {
-    void this.redirectAdmin();
+    void this.initializeRoles();
   }
 
-  private async redirectAdmin(): Promise<void> {
+  private async initializeRoles(): Promise<void> {
     const user = await this.authService.getVerifiedUser();
 
     if (isAdminEmail(user?.email)) {
       await this.router.navigateByUrl('/admin/restaurants');
+      return;
+    }
+
+    try {
+      const roles = await this.authService.getAllowedRoles();
+      this.allowedRoles.set(roles);
+      this.roleService.setAllowedRoles(roles);
+
+      if (roles.length === 1) {
+        await this.chooseRole(roles[0]);
+      }
+    } catch (error) {
+      this.errorMessage.set(this.authService.getErrorMessage(error));
+    } finally {
+      this.isLoadingRoles.set(false);
     }
   }
 
+  canChoose(role: AppRole): boolean {
+    return this.allowedRoles().includes(role);
+  }
+
   async chooseRole(role: AppRole): Promise<void> {
+    if (!this.canChoose(role)) {
+      this.errorMessage.set('Tu cuenta no tiene habilitado ese tipo de acceso.');
+      return;
+    }
+
     this.errorMessage.set('');
     this.isNavigating.set(true);
 

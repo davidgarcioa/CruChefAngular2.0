@@ -34,6 +34,15 @@
   margin-top: 1rem;
 }
 
+.role-grid--single {
+  grid-template-columns: minmax(0, 20rem);
+}
+
+.loading-message {
+  margin: 1rem 0 0;
+  color: var(--muted);
+}
+
 .role-option {
   display: grid;
   gap: 0.55rem;

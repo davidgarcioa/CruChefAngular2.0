@@ -12,7 +12,7 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 app.get('/', (req, res) => {
   res.send('El servidor de CruChef esta vivo');
@@ -25,6 +25,16 @@ app.use('/api', userRoutes);
 app.use('/api', restaurantRoutes);
 app.use('/api', publicRoutes);
 app.use('/api', notificationRoutes);
+
+app.use((error, req, res, next) => {
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({
+      message: 'El archivo del RUT es demasiado grande. El tamaño maximo es 700 KB.',
+    });
+  }
+
+  return next(error);
+});
 
 if (require.main === module) {
   app.listen(port, () => {

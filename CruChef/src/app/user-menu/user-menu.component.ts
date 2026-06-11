@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { of, switchMap } from 'rxjs';
 
 import { OrderService } from '../orders/order.service';
+import { RoleService } from '../auth/role.service';
 import {
   Order,
   OrderStatus,
@@ -46,8 +47,13 @@ export class UserMenuComponent {
   private readonly orderService = inject(OrderService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly roleService = inject(RoleService);
 
-  readonly navigationItems = userNavigationItems;
+  readonly navigationItems = computed(() =>
+    this.roleService.allowedRoles().length > 1
+      ? userNavigationItems
+      : userNavigationItems.filter((item) => item.route !== '/select-role'),
+  );
   readonly categories = categories;
   readonly restaurants = signal<Restaurant[]>([]);
   readonly dishes = signal<Dish[]>([]);

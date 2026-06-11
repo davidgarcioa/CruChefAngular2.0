@@ -41,7 +41,25 @@
 
       <label class="field">
         <span>Contrase&ntilde;a</span>
-        <input type="password" formControlName="password" placeholder="M&iacute;nimo 6 caracteres" />
+        <div class="password-input">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="M&iacute;nimo 6 caracteres"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePasswordVisibility()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              {{ showPassword() ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
         @if (form.controls.password.touched && form.controls.password.invalid) {
           @if (form.controls.password.hasError('required')) {
             <small>La contrase&ntilde;a es obligatoria.</small>

@@ -8,7 +8,12 @@ function resolveUserControllerError(error, fallbackMessage) {
     };
   }
 
-  if (error.message === 'El rol seleccionado no es valido.') {
+  if (
+    error.message === 'El rol seleccionado no es valido.' ||
+    error.message === 'Selecciona para que vas a usar la cuenta.' ||
+    error.message === 'Los tipos de cuenta seleccionados no son validos.' ||
+    error.message === 'Tu cuenta no tiene habilitado ese tipo de acceso.'
+  ) {
     return {
       status: 400,
       message: error.message,
@@ -19,6 +24,19 @@ function resolveUserControllerError(error, fallbackMessage) {
     status: 500,
     message: error.message || fallbackMessage,
   };
+}
+
+async function getProfile(req, res) {
+  try {
+    const profile = await userService.getProfile(req.authUser);
+    return res.json(profile);
+  } catch (error) {
+    const resolved = resolveUserControllerError(
+      error,
+      'No se pudo cargar el perfil del usuario.',
+    );
+    return res.status(resolved.status).json({ message: resolved.message });
+  }
 }
 
 async function postRegisterProfile(req, res) {
@@ -61,6 +79,7 @@ async function postSelectedRole(req, res) {
 }
 
 module.exports = {
+  getProfile,
   postRegisterProfile,
   postLoginProfile,
   postSelectedRole,

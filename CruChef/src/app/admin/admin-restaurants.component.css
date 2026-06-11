@@ -278,6 +278,66 @@
   overflow-wrap: anywhere;
 }
 
+.rut-review {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.rut-review__heading,
+.rut-document-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.rut-review__heading h3,
+.rut-review__heading p {
+  margin: 0;
+}
+
+.rut-review__heading p {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.rut-document-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(12, 12, 13, 0.5);
+}
+
+.rut-document-actions {
+  justify-content: flex-end;
+}
+
+.rut-document-actions > span:first-child {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.rut-image-preview,
+.rut-pdf-preview {
+  width: 100%;
+  min-height: 28rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.rut-image-preview {
+  object-fit: contain;
+}
+
 .top-dish-item {
   display: grid;
   grid-template-columns: 3.25rem minmax(0, 1fr) auto;

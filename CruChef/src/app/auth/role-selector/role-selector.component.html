@@ -10,10 +10,14 @@
   <section class="role-card">
     <div class="card-copy">
       <h2>Como quieres continuar?</h2>
-      <p>La seleccion solo afecta esta sesion y puedes cambiarla luego desde el menu lateral.</p>
+      <p>Mostramos unicamente los accesos habilitados cuando se creo tu cuenta.</p>
     </div>
 
-    <div class="role-grid">
+    @if (isLoadingRoles()) {
+      <p class="loading-message">Cargando accesos de tu cuenta...</p>
+    } @else {
+    <div class="role-grid" [class.role-grid--single]="allowedRoles().length === 1">
+      @if (canChoose('user')) {
       <button
         type="button"
         class="role-option"
@@ -24,7 +28,9 @@
         <strong>Usuario</strong>
         <p>Explora platos disponibles y revisa desde que restaurante estas viendo el menu.</p>
       </button>
+      }
 
+      @if (canChoose('owner')) {
       <button
         type="button"
         class="role-option role-option--owner"
@@ -35,7 +41,9 @@
         <strong>Propietario</strong>
         <p>Administra platos, categorias y cambios del catalogo desde el panel principal.</p>
       </button>
+      }
     </div>
+    }
 
     @if (errorMessage()) {
       <p class="status-message">{{ errorMessage() }}</p>

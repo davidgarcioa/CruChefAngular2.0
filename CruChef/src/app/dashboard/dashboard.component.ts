@@ -7,6 +7,7 @@ import { switchMap } from 'rxjs/operators';
 import { toDataURL } from 'qrcode';
 
 import { OrderService } from '../orders/order.service';
+import { RoleService } from '../auth/role.service';
 import {
   Order,
   OrderStatus,
@@ -51,8 +52,13 @@ export class DashboardComponent {
   private readonly orderService = inject(OrderService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly roleService = inject(RoleService);
 
-  readonly navigationItems = ownerNavigationItems;
+  readonly navigationItems = computed(() =>
+    this.roleService.allowedRoles().length > 1
+      ? ownerNavigationItems
+      : ownerNavigationItems.filter((item) => item.route !== '/select-role'),
+  );
   readonly categories = categories;
   readonly categoryOptions = categories.filter((category) => category.id !== 'all');
   readonly selectedCategoryId = signal('all');

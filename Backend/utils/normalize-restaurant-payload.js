@@ -2,6 +2,14 @@ function normalizeTextField(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+const MAX_RUT_FILE_SIZE = 700_000;
+const ALLOWED_RUT_FILE_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
 function normalizeRestaurantPayload(body = {}) {
   const name = normalizeTextField(body.name);
   const address = normalizeTextField(body.address);
@@ -39,6 +47,18 @@ function normalizeRestaurantPayload(body = {}) {
 
   if (!Number.isFinite(rutFileSize) || rutFileSize <= 0) {
     throw new Error('El archivo del RUT no es valido.');
+  }
+
+  if (rutFileSize > MAX_RUT_FILE_SIZE) {
+    throw new Error('El archivo del RUT supera el limite de 700 KB.');
+  }
+
+  if (!ALLOWED_RUT_FILE_TYPES.has(rutFileType)) {
+    throw new Error('El archivo del RUT debe ser PDF, JPG, PNG o WEBP.');
+  }
+
+  if (!rutFileData.startsWith(`data:${rutFileType};base64,`)) {
+    throw new Error('El contenido del archivo del RUT no coincide con su formato.');
   }
 
   return {

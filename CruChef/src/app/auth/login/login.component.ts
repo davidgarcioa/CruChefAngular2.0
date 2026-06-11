@@ -25,6 +25,7 @@ export class LoginComponent {
 
   readonly isSubmitting = signal(false);
   readonly isSendingReset = signal(false);
+  readonly showPassword = signal(false);
   readonly errorMessage = signal('');
   readonly noticeMessage = signal(
     this.route.snapshot.queryParamMap.get('notice') === 'verify-email'
@@ -55,6 +56,10 @@ export class LoginComponent {
     ],
   });
 
+  togglePasswordVisibility(): void {
+    this.showPassword.update((isVisible) => !isVisible);
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -77,8 +82,11 @@ export class LoginComponent {
       }
 
       this.roleService.clearRole();
+      this.roleService.setAllowedRoles(result.allowedRoles);
       await this.router.navigateByUrl(
-        isAdminEmail(result.user.email) ? '/admin/restaurants' : '/select-role',
+        isAdminEmail(result.user.email)
+          ? '/admin/restaurants'
+          : this.roleService.getAllowedHomeRoute(),
       );
     } catch (error) {
       this.errorMessage.set(this.authService.getErrorMessage(error));

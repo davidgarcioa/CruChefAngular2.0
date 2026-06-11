@@ -24,10 +24,12 @@ export interface RegisterPayload {
   email: string;
   documentNumber: string;
   password: string;
+  allowedRoles: UserRole[];
 }
 
 export interface AuthResult {
   profileSaved: boolean;
+  allowedRoles: UserRole[];
 }
 
 export type UserRole = 'owner' | 'user';
@@ -70,13 +72,18 @@ export class AuthService {
 
     await updateProfile(credential.user, { displayName: payload.fullName });
 
-    const profileSaved = await this.syncProfile('/users/profile/register', {
-      uid: credential.user.uid,
-      fullName: payload.fullName,
-      email: payload.email,
-      documentNumber: payload.documentNumber,
-      emailVerified: false,
-    });
+    const profile = await this.syncProfile(
+      '/users/profile/register',
+      {
+        uid: credential.user.uid,
+        fullName: payload.fullName,
+        email: payload.email,
+        documentNumber: payload.documentNumber,
+        allowedRoles: payload.allowedRoles,
+        emailVerified: false,
+      },
+      await credential.user.getIdToken(),
+    );
 
     try {
       await sendEmailVerification(credential.user);
@@ -84,13 +91,16 @@ export class AuthService {
       await signOut(this.auth);
     }
 
-    return { profileSaved };
+    return {
+      profileSaved: profile !== null,
+      allowedRoles: this.normalizeAllowedRoles(profile?.['allowedRoles'], payload.allowedRoles),
+    };
   }
 
   async login(
     email: string,
     password: string,
-  ): Promise<{ user: User; profileSaved: boolean }> {
+  ): Promise<{ user: User; profileSaved: boolean; allowedRoles: UserRole[] }> {
     const credential = await signInWithEmailAndPassword(this.auth, email, password);
     await credential.user.reload();
 
@@ -104,14 +114,29 @@ export class AuthService {
       throw new Error('auth/email-not-verified');
     }
 
-    const profileSaved = await this.syncProfile('/users/profile/login', {
+    const profile = await this.syncProfile('/users/profile/login', {
       uid: credential.user.uid,
       email: credential.user.email,
       fullName: credential.user.displayName ?? '',
       emailVerified: true,
     });
 
-    return { user: credential.user, profileSaved };
+    return {
+      user: credential.user,
+      profileSaved: profile !== null,
+      allowedRoles: this.normalizeAllowedRoles(profile?.['allowedRoles']),
+    };
+  }
+
+  async getAllowedRoles(): Promise<UserRole[]> {
+    const headers = await this.getAuthHeaders();
+    const profile = await firstValueFrom(
+      this.http.get<Record<string, unknown>>(
+        `${environment.apiBaseUrl}/users/profile`,
+        { headers },
+      ),
+    );
+    return this.normalizeAllowedRoles(profile['allowedRoles']);
   }
 
   async logout(): Promise<void> {
@@ -255,16 +280,36 @@ export class AuthService {
   private async syncProfile(
     path: string,
     body: Record<string, unknown>,
-  ): Promise<boolean> {
+    idToken?: string,
+  ): Promise<Record<string, unknown> | null> {
     try {
-      const headers = await this.getAuthHeaders();
-      await firstValueFrom(
-        this.http.post(`${environment.apiBaseUrl}${path}`, body, { headers }),
+      const headers = idToken
+        ? new HttpHeaders({ Authorization: `Bearer ${idToken}` })
+        : await this.getAuthHeaders();
+      return await firstValueFrom(
+        this.http.post<Record<string, unknown>>(
+          `${environment.apiBaseUrl}${path}`,
+          body,
+          { headers },
+        ),
       );
-      return true;
     } catch (error) {
       console.error('No se pudo sincronizar el perfil en el backend.', error);
-      return false;
+      return null;
     }
+  }
+
+  private normalizeAllowedRoles(
+    value: unknown,
+    fallback: UserRole[] = ['user', 'owner'],
+  ): UserRole[] {
+    if (!Array.isArray(value)) {
+      return fallback;
+    }
+
+    const roles = value.filter(
+      (role): role is UserRole => role === 'user' || role === 'owner',
+    );
+    return roles.length > 0 ? [...new Set(roles)] : fallback;
   }
 }

@@ -196,6 +196,71 @@
                   </div>
                 }
               </dl>
+
+              <section class="rut-review">
+                <div class="rut-review__heading">
+                  <div>
+                    <h3>Documento del RUT</h3>
+                    <p>
+                      {{ restaurant.rutFileName || 'Documento sin nombre' }}
+                      · {{ formatFileSize(restaurant.rutFileSize) }}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="secondary-button"
+                    [disabled]="isLoadingRut()"
+                    (click)="loadRutDocument(restaurant)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                    {{ isLoadingRut() ? 'Cargando...' : 'Revisar documento' }}
+                  </button>
+                </div>
+
+                @if (rutErrorMessage()) {
+                  <p class="status-message status-message--error">{{ rutErrorMessage() }}</p>
+                }
+
+                @if (rutDocument(); as document) {
+                  <div class="rut-document-card">
+                    <div class="rut-document-actions">
+                      <span>{{ document.fileType || 'Tipo desconocido' }}</span>
+                      <a
+                        class="secondary-button"
+                        [href]="rutObjectUrl()"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                        Abrir
+                      </a>
+                      <a
+                        class="secondary-button"
+                        [href]="rutObjectUrl()"
+                        [download]="document.fileName || 'rut-restaurante'"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                        Descargar
+                      </a>
+                    </div>
+
+                    @if (isRutImage()) {
+                      <img
+                        class="rut-image-preview"
+                        [src]="rutObjectUrl()"
+                        [alt]="'Documento RUT de ' + restaurant.name"
+                      />
+                    } @else if (rutPreviewUrl()) {
+                      <iframe
+                        class="rut-pdf-preview"
+                        [src]="rutPreviewUrl()"
+                        [title]="'Documento RUT de ' + restaurant.name"
+                      ></iframe>
+                    }
+                  </div>
+                }
+              </section>
             </article>
 
             <article class="dashboard-panel">

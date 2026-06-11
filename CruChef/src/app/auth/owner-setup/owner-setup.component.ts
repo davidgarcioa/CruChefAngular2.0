@@ -16,6 +16,14 @@ import {
   trimmedRequired,
 } from '../../shared/form-validators';
 
+const MAX_RUT_FILE_SIZE = 700_000;
+const ALLOWED_RUT_FILE_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
 @Component({
   selector: 'app-owner-setup',
   standalone: true,
@@ -32,6 +40,7 @@ export class OwnerSetupComponent {
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal('');
   readonly rutFileName = signal('');
+  readonly rutFileError = signal('');
   readonly scheduleError = signal('');
   readonly scheduleDays = signal([
     { id: 'mon', label: 'Lun', selected: true },
@@ -111,6 +120,7 @@ export class OwnerSetupComponent {
     const schedule = this.buildSchedule();
     if (!schedule) {
       this.scheduleError.set('Selecciona al menos un dia y define hora de apertura y cierre.');
+      this.errorMessage.set('No se pudo crear el restaurante: completa correctamente el horario.');
       return;
     }
 
@@ -118,6 +128,7 @@ export class OwnerSetupComponent {
 
     if (this.restaurantForm.invalid) {
       this.restaurantForm.markAllAsTouched();
+      this.errorMessage.set(this.getInvalidFormMessage());
       return;
     }
 
@@ -172,25 +183,100 @@ export class OwnerSetupComponent {
     const file = input.files?.[0];
 
     if (!file) {
+      this.clearRutFile();
+      this.rutFileError.set('Selecciona un archivo del RUT.');
       return;
     }
 
-    if (file.size > 1_500_000) {
-      this.errorMessage.set('El archivo del RUT no puede superar 1.5 MB.');
+    if (!ALLOWED_RUT_FILE_TYPES.has(file.type)) {
+      this.clearRutFile();
+      this.rutFileError.set('Formato no permitido. Usa un archivo PDF, JPG, PNG o WEBP.');
+      this.errorMessage.set('No se pudo cargar el RUT: el formato del archivo no es compatible.');
       input.value = '';
       return;
     }
 
-    const dataUrl = await this.readFileAsDataUrl(file);
-    this.rutFileName.set(file.name);
+    if (file.size <= 0) {
+      this.clearRutFile();
+      this.rutFileError.set('El archivo del RUT esta vacio o no se puede leer.');
+      this.errorMessage.set('No se pudo cargar el RUT: el archivo esta vacio.');
+      input.value = '';
+      return;
+    }
+
+    if (file.size > MAX_RUT_FILE_SIZE) {
+      this.clearRutFile();
+      this.rutFileError.set('El archivo supera el limite de 700 KB. Reduce su tamaño e intenta de nuevo.');
+      this.errorMessage.set('No se pudo cargar el RUT: el archivo es demasiado grande.');
+      input.value = '';
+      return;
+    }
+
+    try {
+      const dataUrl = await this.readFileAsDataUrl(file);
+
+      if (!dataUrl.startsWith('data:')) {
+        throw new Error('invalid-file-data');
+      }
+
+      this.rutFileName.set(file.name);
+      this.restaurantForm.patchValue({
+        rutFileName: file.name,
+        rutFileType: file.type,
+        rutFileSize: file.size,
+        rutFileData: dataUrl,
+      });
+      this.restaurantForm.controls.rutFileData.markAsTouched();
+      this.rutFileError.set('');
+      this.errorMessage.set('');
+    } catch {
+      this.clearRutFile();
+      this.rutFileError.set('No se pudo leer el archivo. Verifica que no este dañado e intenta de nuevo.');
+      this.errorMessage.set('No se pudo cargar el RUT porque el navegador no pudo leer el archivo.');
+      input.value = '';
+    }
+  }
+
+  private clearRutFile(): void {
+    this.rutFileName.set('');
     this.restaurantForm.patchValue({
-      rutFileName: file.name,
-      rutFileType: file.type || 'application/octet-stream',
-      rutFileSize: file.size,
-      rutFileData: dataUrl,
+      rutFileName: '',
+      rutFileType: '',
+      rutFileSize: 0,
+      rutFileData: '',
     });
     this.restaurantForm.controls.rutFileData.markAsTouched();
-    this.errorMessage.set('');
+  }
+
+  private getInvalidFormMessage(): string {
+    const controls = this.restaurantForm.controls;
+
+    if (
+      controls.rutFileName.invalid ||
+      controls.rutFileType.invalid ||
+      controls.rutFileSize.invalid ||
+      controls.rutFileData.invalid
+    ) {
+      return this.rutFileError() || 'No se pudo crear el restaurante: carga el archivo del RUT.';
+    }
+
+    if (controls.name.invalid) {
+      return 'No se pudo crear el restaurante: revisa el nombre.';
+    }
+
+    if (controls.address.invalid) {
+      return 'No se pudo crear el restaurante: revisa la direccion.';
+    }
+
+    if (controls.city.invalid) {
+      return 'No se pudo crear el restaurante: revisa la ciudad.';
+    }
+
+    if (controls.phone.invalid) {
+      return 'No se pudo crear el restaurante: revisa el telefono.';
+    }
+
+    return 'No se pudo crear el restaurante: revisa los campos marcados.';
   }
 
   private buildSchedule(): string {
